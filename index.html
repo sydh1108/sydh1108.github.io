@@ -845,7 +845,7 @@ function renderHome(){
     const c=chosen[i], p=c?null:recent[ri++];
     // 자동 넘기기 중이면 지금 돌고 있는 사진을 그대로 두고, 꺼져 있으면 고정/자동 사진을 보여 줘요
     const live=slide.on && slide.cur[i] && poolHas(slide.cur[i]) ? slide.cur[i] : null;
-    if(live) setSlot(i, live, capFor(live, i), null);
+    if(live) setSlot(i, live, slideCap(live, i), null);
     else setSlot(i, c?.asset||p?.asset||null, c ? (c.caption||COLLAGE_CAP[i]) : p ? capFor(p.asset, i) : COLLAGE_CAP[i], null);
     cells[i].classList.toggle("pick", !!state.db);
     cells[i].title = state.db ? "눌러서 이 자리 사진 고르기" : "";
@@ -859,6 +859,17 @@ function capFor(asset, i){
   const p=state.photos.find(x=>x.asset===asset), t=p&&state.trips.find(z=>z.id===p.trip);
   if(p) return p.caption || (t ? (t.abroad ? t.abroadName : MUNI.get(t.muni)?.n || t.title) : "");
   return COLLAGE_CAP[i];
+}
+// 자동 넘기기 중 글씨: "2026.10.01 · 강릉시"처럼 날짜와 장소.
+// 날짜는 사진 파일 날짜가 여행 기간 안이면 그 날, 아니면 여행 출발일을 써요
+function slideCap(asset, i){
+  const p=state.photos.find(x=>x.asset===asset), t=p&&state.trips.find(z=>z.id===p.trip);
+  if(!t) return capFor(asset, i);
+  const ymd=n=>{ const d=new Date(n); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
+  const shot=p.at ? ymd(p.at) : "";
+  const day = shot && t.start && shot>=t.start && shot<=(t.end||t.start) ? shot : t.start;
+  const place = t.abroad ? (t.abroadName||"해외") : (MUNI.get(t.muni)?.n || PROV.get(t.prov)?.n || "");
+  return [fmt(day), place].filter(Boolean).join(" · ") || capFor(asset, i);
 }
 // 한 자리의 사진을 바꿔요. 같은 사진이면 그대로 두고, fx가 있으면 전환 효과를 줘요
 function setSlot(i, asset, cap, fx){
@@ -904,7 +915,7 @@ function slideTick(){
   if(!cand.length) return;
   const a=cand[Math.floor(Math.random()*cand.length)];
   slide.cur[i]=a;
-  setSlot(i, a, capFor(a, i), slide.fx);
+  setSlot(i, a, slideCap(a, i), slide.fx);
 }
 function syncSlideCtrl(){
   const ctrl=$("slideCtrl"); ctrl.hidden=!state.db;
