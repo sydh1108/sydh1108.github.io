@@ -12,9 +12,9 @@
   --bg:#0E1626; --sky:#18294A; --surface:#16213A; --fg:#E8EEF8; --muted:#9AA8C2; --line:#27354F;
   --accent:#7AA2FF; --accent-ink:#0E1626; --accent-soft:#1D2B4C;
   --coral:#FF8F73; --coral-soft:#3B2531; --sand:#C9A563;
-  /* 지도: 바다는 더 어둡게, 땅은 밝은 남회색 + 또렷한 경계선. 다녀온 곳은 밤에 불이 켜지듯 금빛으로, 사진이 많을수록 밝아져요 */
+  /* 지도: 바다는 더 어둡게, 땅은 밝은 남회색 + 또렷한 경계선. 다녀온 곳은 분홍빛으로, 사진이 많을수록 밝아져요 */
   --land:#34466E; --land-hover:#46598A; --sea:#0A1220; --geo-stroke:#6A7EA8;
-  --m-v:#6E6250; --m1:#9C7A3C; --m2:#C9973A; --m3:#EBB847; --m4:#FFE08A;
+  --m-v:#6B4A68; --m1:#9C4F83; --m2:#CC5E9C; --m3:#F282B9; --m4:#FFC4E0;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.35);
   --star:rgba(255,255,255,.95); --star-halo:rgba(200,220,255,.35); --star-glow:rgba(255,226,170,.95);
   --f-display:"Gowun Batang","Noto Serif KR","Apple SD Gothic Neo",serif;
@@ -150,12 +150,12 @@ section+section::before{content:"";position:absolute;left:0;right:0;top:0;height
 .geo path.dim{opacity:.5}
 .geo path.base{pointer-events:none;fill:var(--land)}
 .geo path.off{display:none}
-.geo path.sel{stroke:var(--coral);stroke-width:3}
+.geo path.sel{stroke:#fff;stroke-width:3}
 .inset{fill:none;stroke:var(--accent);stroke-opacity:.45;stroke-dasharray:3 3;vector-effect:non-scaling-stroke}
 .lbl{fill:var(--fg);font-family:var(--f-body);font-weight:700;text-anchor:middle;dominant-baseline:middle;pointer-events:none;
   paint-order:stroke;stroke:var(--sea);stroke-linejoin:round;stroke-opacity:.85}
-/* 밝은 금빛(사진 10장+) 위에서는 어두운 글씨로 */
-.lbl.on-dark{fill:#22180A;stroke:var(--m4);stroke-opacity:.7}
+/* 밝은 분홍(사진 10장+) 위에서는 어두운 글씨로 */
+.lbl.on-dark{fill:#2A0F20;stroke:var(--m4);stroke-opacity:.7}
 .map-foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-top:12px;font-size:12px;color:var(--muted)}
 #mapCount{font-family:var(--f-hand);font-size:20px;color:var(--fg)}
 .legend{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
