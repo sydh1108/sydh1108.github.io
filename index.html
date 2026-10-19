@@ -133,6 +133,7 @@ section+section::before{content:"";position:absolute;left:0;right:0;top:0;height
 
 /* map */
 .map-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:28px;align-items:start}
+.map-grid.solo{grid-template-columns:minmax(0,560px);justify-content:center}
 .map-bar{display:flex;align-items:center;gap:10px;min-height:36px;margin-bottom:8px;flex-wrap:wrap}
 .crumb{font-size:14px;color:var(--muted)}
 .crumb b{color:var(--fg)}
@@ -722,6 +723,10 @@ function tripRow(t){
 }
 function renderSide(){
   const side=$("side"); const add = state.db&&state.canWrite;
+  // 전국 보기에서는 옆 패널 없이 지도만 크게 보여 줘요. 시·도나 시·군·구를 고르면 패널이 열려요
+  const solo=!state.region&&!state.focus;
+  side.hidden=solo; side.parentElement.classList.toggle("solo",solo);
+  if(solo){ side.innerHTML=""; return; }
   if(state.region){
     const m=MUNI.get(state.region), p=PROV.get(m.p);
     const ts=sortedTrips(state.trips.filter(t=>!t.abroad&&t.muni===m.c));
@@ -749,10 +754,6 @@ function renderSide(){
       ${ts.length?`<div class="trips">${ts.map(tripRow).join("")}</div>`:`<div class="mini-empty">아직 ${esc(p.n)} 여행 기록이 없어요.</div>`}`;
     return;
   }
-  const ts=sortedTrips();
-  side.innerHTML=`<div class="eyebrow" style="margin-bottom:8px">여행 기록 · 최신순</div>` + (ts.length
-    ? `<div class="trips">${ts.map(tripRow).join("")}</div>`
-    : `<div class="mini-empty">아직 기록한 여행이 없어요.<br>여행을 추가하고 사진을 올리면 지도에 색이 칠해져요.${add?`<br><button class="btn primary sm" type="button" data-add-trip>첫 여행 추가</button>`:""}</div>`);
 }
 
 // ---------- 홈 ----------
