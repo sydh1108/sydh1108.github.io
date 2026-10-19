@@ -103,7 +103,7 @@ section+section::before{content:"";position:absolute;left:0;right:0;top:0;height
 .dday{margin-top:12px;font-size:17px;color:var(--muted)}
 .dday strong{color:var(--accent);font-family:var(--f-mono);font-weight:500}
 .dday .hand{font-family:var(--f-hand);font-size:22px;color:var(--fg);margin-left:4px}
-.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:26px;max-width:520px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:26px;max-width:420px}
 .stat{background:var(--surface);border-radius:8px;padding:12px 12px 10px;text-align:center;box-shadow:var(--shadow);
   outline:1.5px dashed var(--line);outline-offset:-6px}
 .stat .n{font-family:var(--f-mono);font-size:26px;font-weight:500;line-height:1.15;color:var(--accent)}
@@ -205,6 +205,8 @@ body.world .map-box{aspect-ratio:2.25/1}
   paint-order:stroke;stroke:var(--sea);stroke-linejoin:round;stroke-opacity:.85}
 /* 밝은 분홍(사진 10장+) 위에서는 어두운 글씨로 */
 .lbl.on-dark{fill:#2A0F20;stroke:var(--m4);stroke-opacity:.7}
+/* 세계 지도에서 안 가 본 나라 이름은 조금 흐리게 */
+.lbl.faint{fill:var(--muted);font-weight:400}
 .map-foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-top:12px;font-size:12px;color:var(--muted)}
 #mapCount{font-family:var(--f-hand);font-size:20px;color:var(--fg)}
 .legend{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
@@ -338,7 +340,7 @@ footer small{display:block;font-family:var(--f-body);font-size:12px;margin-top:4
   .brand span{display:none}
   .scope-tabs button{padding:4px 10px;font-size:13px}
   .nav nav a{padding:6px 5px;font-size:13px}
-  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
   .row2{grid-template-columns:1fr}
   .grid{columns:2 140px;column-gap:10px}
   .ph{margin-bottom:12px;padding:5px 5px 0}
@@ -366,9 +368,7 @@ footer small{display:block;font-family:var(--f-body);font-size:12px;margin-top:4
         <div class="stats">
           <div class="stat"><div class="n" id="stTrips">0</div><div class="l">함께한 여행</div></div>
           <div class="stat"><div class="n" id="stPlaces">0</div><div class="l" id="stPlacesL">다녀온 시·군·구</div></div>
-          <div class="stat"><div class="n" id="stPhotos">0</div><div class="l">남긴 사진</div></div>
-          <div class="stat"><div class="n" id="stNights">0</div><div class="l">함께 보낸 밤</div></div>
-        </div>
+          <div class="stat"><div class="n" id="stPhotos">0</div><div class="l">남긴 사진</div></div>        </div>
         <div class="next" id="nextTrip" hidden></div>
         <div class="hero-actions">
           <button class="btn primary" id="heroAddTrip" type="button">여행 추가</button>
@@ -649,7 +649,19 @@ function setVB(v){ vb=v; svg?.setAttribute("viewBox", v.map(n=>n.toFixed(2)).joi
 // 라벨은 확대해도 화면에서 같은 크기로 보이게: 글자 크기 = 비율 × 현재 보이는 폭
 function sizeLabels(){
   if(!svg) return;
-  for(const t of $("gLbl").children){ const fs=+t.dataset.k*vb[2]; t.setAttribute("font-size",fs.toFixed(3)); t.setAttribute("stroke-width",(fs*.22).toFixed(3)); }
+  // 화면 1px 이 지도 좌표로 얼마인지
+  const s=Math.min(svg.clientWidth/vb[2], svg.clientHeight/vb[3]) || 1;
+  for(const t of $("gLbl").children){
+    let fs;
+    if(t.dataset.fs){
+      // 세계 지도: 나라 크기에 맞춘 글씨. 화면에서 너무 작으면 숨기고, 다녀온·고른 나라는 읽을 수 있는 크기로
+      fs=+t.dataset.fs;
+      const px=fs*s;
+      if(t.dataset.keep){ if(px<11) fs=11/s; t.style.display=""; }
+      else t.style.display = px<6.5 ? "none" : "";
+    } else fs=+t.dataset.k*vb[2];
+    t.setAttribute("font-size",fs.toFixed(3)); t.setAttribute("stroke-width",(fs*.22).toFixed(3));
+  }
 }
 function animateTo(target){
   if(!svg) return;
@@ -688,14 +700,19 @@ function paintMap(){
   const sel=state.region && muniEls.get(state.region); if(sel) sel.parentNode.appendChild(sel);
   // 라벨 (세계 지도는 나라가 많아서 다녀온 나라와 고른 나라만 이름을 써요)
   const W=isWorld();
-  const items = state.focus&&!W ? GEO.muni.filter(m=>m.p===state.focus) : W ? GEO.prov.filter(c=>prov[c.c]?.trips||c.c===state.focus) : GEO.prov;
+  // 세계 지도는 모든 나라 이름을 그 나라 크기에 맞춰 써요 (점으로 그린 섬나라는 다녀왔거나 골랐을 때만)
+  const items = state.focus&&!W ? GEO.muni.filter(m=>m.p===state.focus) : W ? GEO.prov.filter(c=>!c.dot||prov[c.c]?.trips||c.c===state.focus) : GEO.prov;
   const st = state.focus&&!W ? muni : prov;
   const small = new Set(["11","21","22","23","24","25","26","29"]);
-  const base = W ? (state.focus ? .03 : .018) : state.focus ? .028 : .026;
+  const base = state.focus ? .028 : .026;
+  const fitFs = c => { const b=c.lb||c.b, w=b[2]-b[0], h=b[3]-b[1], n=Math.max(2,[...c.n].length); return Math.max(.3, Math.min(w*.7/n, h*.38, 30)); };
   $("gLbl").innerHTML = items.map(it=>{
-    const k = !W && !state.focus && small.has(it.c) ? base*.78 : base;
     const lv = level(st[it.c]);
-    return `<text class="lbl${lv==="3"||lv==="4"?" on-dark":""}" x="${it.l[0]}" y="${it.l[1]}" data-k="${k}">${esc(it.n)}</text>`;
+    const cls = `lbl${lv==="3"||lv==="4"?" on-dark":""}`;
+    if(W){ const keep = prov[it.c]?.trips || it.c===state.focus;
+      return `<text class="${cls}${keep?"":" faint"}" x="${it.l[0]}" y="${it.l[1]}" data-fs="${fitFs(it).toFixed(2)}"${keep?' data-keep="1"':""}>${esc(it.n)}</text>`; }
+    const k = !state.focus && small.has(it.c) ? base*.78 : base;
+    return `<text class="${cls}" x="${it.l[0]}" y="${it.l[1]}" data-k="${k}">${esc(it.n)}</text>`;
   }).join("");
   sizeLabels();
   const p=state.focus&&PROV.get(state.focus), m=state.region&&MUNI.get(state.region);
@@ -908,7 +925,6 @@ function renderHome(){
     : new Set(past.filter(t=>!t.abroad&&t.muni).map(t=>t.muni)).size;
   $("stPlacesL").textContent = isWorld() ? "다녀온 나라" : "다녀온 시·군·구";
   $("stPhotos").textContent=state.photos.length;
-  $("stNights").textContent=past.reduce((s,t)=>s+nights(t),0);
   const up = state.trips.filter(t=>parseD(t.start)>today()).sort((x,y)=>x.start.localeCompare(y.start))[0];
   const nx=$("nextTrip");
   if(up){ const dd=Math.round((parseD(up.start)-today())/864e5); nx.innerHTML=`<span class="pill">D-${dd}</span><span>다음 여행 · <b>${esc(up.title)}</b> <span class="where">${esc(placeLabel(up))}</span></span>`; nx.hidden=false; }
@@ -1401,7 +1417,7 @@ renderAll();
 const LEGACY_MUNI={"23010":"23090","23020":"23090","23080":"23120"};
 // 나라 칸이 생기기 전에 만든 해외 여행("일본 교토"처럼 글로만 적은 것)은 글에서 나라 이름을 찾아 연결해요
 const COUNTRY_BY_NAME=[...COUNTRY.values()].filter(c=>c.c!=="KOR").sort((a,b)=>b.n.length-a.n.length);
-const COUNTRY_ALIAS={"미국":"USA","영국":"GBR","대만":"TWN","홍콩":"HKG","마카오":"MAC","괌":"GUM","사이판":"MNP","하와이":"USA","발리":"IDN","다낭":"VNM","방콕":"THA","도쿄":"JPN","오사카":"JPN","후쿠오카":"JPN","파리":"FRA","런던":"GBR","뉴욕":"USA"};
+const COUNTRY_ALIAS={"터키":"TUR","오스트레일리아":"AUS","미국":"USA","영국":"GBR","대만":"TWN","홍콩":"HKG","마카오":"MAC","괌":"GUM","사이판":"MNP","하와이":"USA","발리":"IDN","다낭":"VNM","방콕":"THA","도쿄":"JPN","오사카":"JPN","후쿠오카":"JPN","파리":"FRA","런던":"GBR","뉴욕":"USA"};
 function guessCountry(text){
   if(!text) return "";
   const hit=COUNTRY_BY_NAME.find(c=>text.includes(c.n)); if(hit) return hit.c;
