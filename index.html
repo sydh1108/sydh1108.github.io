@@ -128,6 +128,12 @@ section+section::before{content:"";position:absolute;left:0;right:0;top:0;height
 .pol:nth-child(3){right:8%;bottom:0;width:46%;transform:rotate(-1.5deg);z-index:3}
 .pol:nth-child(3)::before{background:color-mix(in srgb,var(--accent) 35%,transparent)}
 .pol:hover{transform:rotate(0) scale(1.02);z-index:4}
+.pol.pick{cursor:pointer}
+.pol.pick::after{content:"바꾸기";position:absolute;right:14px;top:16px;font-size:12px;padding:2px 9px;border-radius:999px;background:rgba(10,18,32,.7);color:#fff;opacity:0;transition:opacity .2s}
+.pol.pick:hover::after,.pol.pick:focus-within::after{opacity:1}
+@media (pointer:coarse){.pol.pick::after{opacity:.85}}
+.pick-grid{max-height:260px;overflow:auto;margin-top:0;padding:4px}
+.pick-grid button.on{outline:3px solid var(--coral);outline-offset:1px;transform:none}
 .pol .empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:var(--accent);font-size:13px;padding:10px;
   background:repeating-linear-gradient(45deg,var(--accent-soft) 0 10px,var(--sky) 10px 20px)}
 
@@ -432,6 +438,19 @@ footer small{display:block;font-family:var(--f-body);font-size:12px;margin-top:4
   <div class="dlg-actions"><button class="btn ghost" type="button" data-close>닫기</button><button class="btn primary" type="submit" id="uGo">올리기</button></div>
 </form></dialog>
 
+<!-- 첫 화면 폴라로이드 사진 고르기 -->
+<dialog id="dlgPick"><form class="dlg" id="formPick" method="dialog">
+  <h3 id="pickTitle">사진 고르기</h3>
+  <div class="field"><label>앨범에서 고르기</label><div class="thumbs pick-grid" id="pickGrid"></div></div>
+  <div class="field" id="pickUpWrap"><label for="pickFile">또는 새 사진 올리기 (이 자리에만 쓰고 사진첩에는 안 들어가요)</label><input id="pickFile" type="file" accept="image/*"></div>
+  <div class="field"><label for="pickCap">사진 아래 글씨</label><input id="pickCap" maxlength="30"></div>
+  <p class="err" id="pickErr" hidden></p>
+  <div class="dlg-actions">
+    <button class="btn ghost left" type="button" id="pickClear" hidden>자동으로 되돌리기</button>
+    <button class="btn ghost" type="button" data-close>취소</button><button class="btn primary" type="submit" id="pickGo">저장</button>
+  </div>
+</form></dialog>
+
 <!-- 여행 삭제 확인 -->
 <dialog id="dlgDel"><div class="dlg">
   <h3 id="delTitle">여행을 삭제할까요?</h3>
@@ -463,7 +482,7 @@ footer small{display:block;font-family:var(--f-body);font-size:12px;margin-top:4
 const GEO = window.KOREA_GEO || null;
 const PROV = new Map((GEO?.prov||[]).map(p=>[p.c,p]));
 const MUNI = new Map((GEO?.muni||[]).map(m=>[m.c,m]));
-const state = { couple:{}, trips:[], photos:[], filter:"all", db:null, assets:null, canWrite:true, lbList:[], lbIdx:0,
+const state = { couple:{}, collage:{}, trips:[], photos:[], filter:"all", db:null, assets:null, canWrite:true, lbList:[], lbIdx:0,
   focus:null, region:null, stats:null };
 const $ = id => document.getElementById(id);
 const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -773,15 +792,80 @@ function renderHome(){
   const nx=$("nextTrip");
   if(up){ const dd=Math.round((parseD(up.start)-today())/864e5); nx.innerHTML=`<span class="pill">D-${dd}</span><span>다음 여행 · <b>${esc(up.title)}</b> <span class="where">${esc(placeLabel(up))}</span></span>`; nx.hidden=false; }
   else nx.hidden=true;
-  const recent=[...state.photos].sort((x,y)=>(y.createdAt||0)-(x.createdAt||0)).slice(0,3);
-  const cells=$("collage").children, defCap=["우리의 첫 장","다음 여행지","함께라서 좋은 날"];
+  // 직접 고른 사진이 있는 자리는 그 사진, 나머지 자리는 최근에 올린 사진으로 채워요
+  const cells=$("collage").children;
+  // 앨범에서 고른 사진이 나중에 삭제됐으면 그 자리는 다시 자동으로 채워요
+  const chosen=[0,1,2].map(i=>{ const c=state.collage["s"+i]; return c && (c.own || state.photos.some(p=>p.asset===c.asset)) ? c : null; });
+  const used=new Set(chosen.filter(Boolean).map(c=>c.asset));
+  const recent=[...state.photos].filter(p=>!used.has(p.asset)).sort((x,y)=>(y.createdAt||0)-(x.createdAt||0));
+  let ri=0;
   for(let i=0;i<3;i++){
-    const p=recent[i], t=p&&state.trips.find(z=>z.id===p.trip);
-    cells[i].querySelector(".img").innerHTML = p ? `<img src="${blob(p.asset)}" alt="${esc(p.caption||"여행 사진")}" loading="lazy">`
+    const c=chosen[i], p=c?null:recent[ri++], t=p&&state.trips.find(z=>z.id===p.trip);
+    const asset=c?.asset||p?.asset;
+    const cap = c ? (c.caption||COLLAGE_CAP[i]) : p ? (p.caption || (t ? (t.abroad ? t.abroadName : MUNI.get(t.muni)?.n || t.title) : "")) : COLLAGE_CAP[i];
+    cells[i].querySelector(".img").innerHTML = asset ? `<img src="${blob(asset)}" alt="${esc(cap||"여행 사진")}" loading="lazy">`
       : `<div class="empty">${i===0?"첫 사진을 올리면<br>여기에 붙어요":""}</div>`;
-    cells[i].querySelector("figcaption").textContent = p ? (p.caption || (t ? (t.abroad ? t.abroadName : MUNI.get(t.muni)?.n || t.title) : "")) : defCap[i];
+    cells[i].querySelector("figcaption").textContent = cap;
+    cells[i].classList.toggle("pick", !!state.db);
+    cells[i].title = state.db ? "눌러서 이 자리 사진 고르기" : "";
   }
 }
+
+// ---------- 첫 화면 폴라로이드 3장 직접 고르기 ----------
+const COLLAGE_CAP=["우리의 첫 장","다음 여행지","함께라서 좋은 날"];
+let pickSlot=0, pickAsset=null;
+function openPick(i){
+  if(!state.db) return;
+  pickSlot=i; const cur=state.collage["s"+i]||{};
+  pickAsset=cur.asset||null;
+  $("pickTitle").textContent=`'${COLLAGE_CAP[i]}' 자리 사진`;
+  $("pickCap").value=cur.caption||""; $("pickCap").placeholder=COLLAGE_CAP[i];
+  $("pickFile").value=""; $("pickErr").hidden=true; $("pickClear").hidden=!state.collage["s"+i];
+  $("pickUpWrap").hidden=!state.assets;
+  const ps=[...state.photos].sort((x,y)=>(y.at||0)-(x.at||0));
+  $("pickGrid").innerHTML = ps.length
+    ? ps.map(p=>`<button type="button" data-pick="${esc(p.asset)}" class="${p.asset===pickAsset?"on":""}" aria-label="이 사진 고르기"><img src="${blob(p.asset)}" alt="${esc(p.caption||"")}" loading="lazy"></button>`).join("")
+    : `<p class="note">아직 앨범에 사진이 없어요. 아래에서 새로 올릴 수 있어요.</p>`;
+  $("dlgPick").showModal();
+}
+$("collage").addEventListener("click", e=>{ const f=e.target.closest(".pol"); if(f) openPick([...$("collage").children].indexOf(f)); });
+$("pickGrid").addEventListener("click", e=>{
+  const b=e.target.closest("[data-pick]"); if(!b) return;
+  pickAsset=b.dataset.pick; $("pickFile").value="";
+  $("pickGrid").querySelectorAll("[data-pick]").forEach(x=>x.classList.toggle("on", x===b));
+});
+$("pickFile").addEventListener("change", ()=>{
+  if(!$("pickFile").files.length) return;
+  pickAsset=null; $("pickGrid").querySelectorAll(".on").forEach(x=>x.classList.remove("on"));
+});
+$("pickClear").addEventListener("click", async()=>{
+  const old=state.collage["s"+pickSlot];
+  try{
+    const next={...state.collage}; delete next["s"+pickSlot];
+    await state.db.doc("meta/collage").set(next);
+    if(old?.own) try{ await state.assets?.delete(old.asset); }catch(_){}
+    $("dlgPick").close(); toast("최근 사진으로 돌려놨어요");
+  }catch(_){ $("pickErr").textContent="저장하지 못했어요."; $("pickErr").hidden=false; }
+});
+$("formPick").addEventListener("submit", async e=>{
+  e.preventDefault();
+  const err=m=>{ $("pickErr").textContent=m; $("pickErr").hidden=false; };
+  const file=$("pickFile").files[0];
+  if(!file && !pickAsset) return err("앨범에서 사진을 고르거나 새로 올려 주세요.");
+  $("pickGo").disabled=true;
+  const old=state.collage["s"+pickSlot];
+  try{
+    let slot;
+    // 새로 올린 사진은 사진첩에는 넣지 않고 이 자리에만 써요
+    if(file){ const {blob:b}=await shrink(file); const res=await state.assets.upload(b,{type:b.type||"image/jpeg"}); slot={asset:res.id, own:true}; }
+    else slot={asset:pickAsset};
+    slot.caption=$("pickCap").value.trim();
+    await state.db.doc("meta/collage").set({...state.collage, ["s"+pickSlot]:slot});
+    if(old?.own && old.asset!==slot.asset) try{ await state.assets.delete(old.asset); }catch(_){}
+    $("dlgPick").close(); toast("사진을 바꿨어요");
+  }catch(x){ err("저장하지 못했어요. 잠시 뒤 다시 해 주세요."); }
+  finally{ $("pickGo").disabled=false; }
+});
 
 // ---------- 사진첩 ----------
 function renderAlbum(){
@@ -1093,7 +1177,7 @@ function fixRegion(t){
 }
 // 아직 서명 주소가 없는 사진·대표 사진 주소를 받아 와요
 async function signMissing(){
-  const ids=[...new Set([...state.photos.map(p=>p.asset), ...state.trips.map(t=>t.cover)].filter(id=>id&&!urls.has(id)))];
+  const ids=[...new Set([...state.photos.map(p=>p.asset), ...state.trips.map(t=>t.cover), ...Object.values(state.collage).map(c=>c?.asset)].filter(id=>id&&!urls.has(id)))];
   if(!ids.length) return;
   try{ for(const [k,v] of await state.assets.sign(ids)) urls.set(k,v); }catch(_){}
 }
@@ -1149,6 +1233,7 @@ function askLogin(be){
   syncControls(); renderSide();
   be.startRealtime();
   db.doc("meta/couple").onSnapshot(s=>{ state.couple = s.exists ? (dataOf(s)||{}) : {}; renderHome(); }, ()=>{});
+  db.doc("meta/collage").onSnapshot(async s=>{ state.collage = s.exists ? (dataOf(s)||{}) : {}; await signMissing(); renderHome(); }, ()=>{});
   db.collection("trips").onSnapshot(async s=>{ state.trips=s.docs.map(d=>fixRegion({id:d.id,...dataOf(d)})); await signMissing(); renderAll(); },()=>banner("여행 목록을 불러오지 못했어요. 새로고침해 주세요."));
   db.collection("photos").onSnapshot(async s=>{ state.photos=s.docs.map(d=>({id:d.id,...dataOf(d)})); await signMissing(); renderAll(); }, ()=>banner("사진을 불러오지 못했어요. 새로고침해 주세요."));
 })();
