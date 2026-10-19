@@ -389,6 +389,10 @@ footer small{display:block;font-family:var(--f-body);font-size:12px;margin-top:4
     <div class="field"><label for="tEnd">돌아온 날</label><input id="tEnd" type="date"></div>
   </div>
   <div class="field"><label for="tNote">한 줄 메모</label><textarea id="tNote" rows="2" maxlength="200" placeholder="예: 비 와서 계획은 다 틀어졌지만 제일 웃겼던 여행"></textarea></div>
+  <div class="field"><label for="tFiles">사진 (선택, 여러 장 가능)</label><input id="tFiles" type="file" accept="image/*" multiple></div>
+  <div class="previews" id="tPrev"></div>
+  <div class="progress" id="tProg" hidden><i></i></div>
+  <p class="note" id="tMsg" hidden></p>
   <p class="err" id="tripErr" hidden></p>
   <div id="tripConfirm" hidden></div>
   <div class="dlg-actions">
@@ -852,8 +856,15 @@ function openTrip(id, pre){
     + `<option value="abroad"${prov==="abroad"?" selected":""}>해외</option>`;
   if(prov!=="abroad") fillMuni(prov, t.muni || (state.region && MUNI.get(state.region)?.p===prov ? state.region : ""));
   $("tripErr").hidden=true; $("tripConfirm").hidden=true; $("tripDelete").hidden=!editing;
+  $("tFiles").value=""; $("tPrev").innerHTML=""; $("tProg").hidden=true; $("tProg").firstElementChild.style.width="0"; $("tMsg").hidden=true;
+  $("tFiles").parentElement.hidden=!state.assets;
   syncPlaceUI(); $("dlgTrip").showModal();
 }
+$("tFiles").addEventListener("change", ()=>{
+  const fs=[...$("tFiles").files];
+  $("tPrev").innerHTML=fs.slice(0,24).map(f=>`<img src="${URL.createObjectURL(f)}" alt="">`).join("");
+  $("tMsg").textContent = fs.length ? `${fs.length}장 선택됨 · 저장하면 같이 올라가요` : ""; $("tMsg").hidden=!fs.length;
+});
 $("formTrip").addEventListener("submit", async e=>{
   e.preventDefault();
   const err=m=>{ $("tripErr").textContent=m; $("tripErr").hidden=false; };
@@ -871,13 +882,22 @@ $("formTrip").addEventListener("submit", async e=>{
   if(end<start) return err("돌아온 날이 출발일보다 빨라요.");
   const fallback = abroad ? data.abroadName : `${MUNI.get(data.muni).n} 여행`;
   Object.assign(data,{title:$("tTitle").value.trim()||fallback, start, end, note:$("tNote").value.trim()});
+  const fs=state.assets ? [...$("tFiles").files] : [];
   $("tripSave").disabled=true;
+  let trip;
   try{
-    if(editing) await state.db.doc("trips/"+editing.id).update(data);
-    else { const ref=state.db.collection("trips").doc(); await ref.set({...data, cover:null, createdAt:Date.now()}); state.filter=ref.id; }
-    $("dlgTrip").close(); toast(editing?"수정했어요":"여행을 추가했어요");
-  }catch(x){ err("저장하지 못했어요. 이 앨범의 편집 권한이 있는지 확인해 주세요."); }
-  finally{ $("tripSave").disabled=false; }
+    if(editing){ await state.db.doc("trips/"+editing.id).update(data); trip={...editing,...data}; }
+    else { const ref=state.db.collection("trips").doc(); trip={...data, cover:null, createdAt:Date.now()}; await ref.set(trip); trip.id=ref.id; state.filter=ref.id; }
+  }catch(x){ $("tripSave").disabled=false; return err("저장하지 못했어요. 이 앨범의 편집 권한이 있는지 확인해 주세요."); }
+  const done = editing ? "수정했어요" : "여행을 추가했어요";
+  if(!fs.length){ $("tripSave").disabled=false; $("dlgTrip").close(); toast(done); return; }
+  // 고른 사진을 이 여행에 바로 올려요
+  $("tProg").hidden=false; $("tMsg").hidden=false;
+  const bar=$("tProg").firstElementChild;
+  const r=await uploadFiles(trip, fs, "", i=>$("tMsg").textContent=`${i+1} / ${fs.length}장 올리는 중…`, i=>bar.style.width=((i+1)/fs.length*100)+"%");
+  $("tripSave").disabled=false; $("dlgTrip").close();
+  toast(r.fail.length ? `${done} · 사진 ${r.ok}장 올렸고 ${r.fail.length}장은 못 올렸어요` : `${done} · 사진 ${r.ok}장 올렸어요`);
+  renderAll();
 });
 $("tripDelete").addEventListener("click", ()=>{ const id=editing.id; $("dlgTrip").close(); askDeleteTrip(id); });
 
@@ -940,29 +960,36 @@ async function shrink(file){
   if(/^image\/(jpeg|png|webp|gif)$/.test(file.type)) return {blob:file,w:0,h:0};
   throw {code:"unsupported_type"};
 }
+// 사진 여러 장을 한 여행에 올려요. 첫 사진은 대표 사진이 돼요. (여행 추가 창과 사진 올리기 창이 같이 써요)
+async function uploadFiles(trip, fs, cap, onStart, onDone){
+  let ok=0, fail=[], stop="";
+  for(let i=0;i<fs.length;i++){
+    onStart?.(i);
+    try{
+      const {blob:b,w,h}=await shrink(fs[i]);
+      let res; try{ res=await state.assets.upload(b,{type:b.type||"image/jpeg"}); }
+      catch(x){ if(x?.code==="store_unavailable"){ await new Promise(r=>setTimeout(r,1500)); res=await state.assets.upload(b,{type:b.type||"image/jpeg"}); } else throw x; }
+      await state.db.collection("photos").doc().set({trip:trip.id, asset:res.id, caption:cap, w, h, at:fs[i].lastModified||Date.now(), createdAt:Date.now()});
+      if(!trip.cover){ await state.db.doc("trips/"+trip.id).update({cover:res.id}); trip={...trip,cover:res.id}; }
+      ok++;
+    }catch(x){
+      fail.push(fs[i].name);
+      if(x?.code==="quota_or_state"){ stop="앨범 저장 공간이 가득 찼어요. 안 쓰는 사진을 지운 뒤 다시 올려 주세요."; break; }
+      if(x?.code==="rate_limited"){ stop="잠깐 너무 많이 올렸어요. 1분 뒤 남은 사진을 다시 올려 주세요."; break; }
+    }
+    onDone?.(i);
+  }
+  return {ok, fail, stop};
+}
 $("formUp").addEventListener("submit", async e=>{
   e.preventDefault();
   const fs=[...$("uFiles").files]; const tid=$("uTrip").value; const cap=$("uCap").value.trim();
   if(!fs.length){ $("uErr").textContent="올릴 사진을 골라 주세요."; $("uErr").hidden=false; return; }
   $("uErr").hidden=true; $("uErr").textContent=""; $("uGo").disabled=true; $("uProg").hidden=false;
-  const bar=$("uProg").firstElementChild; let ok=0, fail=[];
-  let trip=state.trips.find(t=>t.id===tid);
-  for(let i=0;i<fs.length;i++){
-    $("uMsg").textContent=`${i+1} / ${fs.length}장 올리는 중…`;
-    try{
-      const {blob:b,w,h}=await shrink(fs[i]);
-      let res; try{ res=await state.assets.upload(b,{type:b.type||"image/jpeg"}); }
-      catch(x){ if(x?.code==="store_unavailable"){ await new Promise(r=>setTimeout(r,1500)); res=await state.assets.upload(b,{type:b.type||"image/jpeg"}); } else throw x; }
-      await state.db.collection("photos").doc().set({trip:tid, asset:res.id, caption:cap, w, h, at:fs[i].lastModified||Date.now(), createdAt:Date.now()});
-      if(trip && !trip.cover){ await state.db.doc("trips/"+tid).update({cover:res.id}); trip={...trip,cover:res.id}; }
-      ok++;
-    }catch(x){
-      fail.push(fs[i].name);
-      if(x?.code==="quota_or_state"){ $("uErr").textContent="앨범 저장 공간이 가득 찼어요. 안 쓰는 사진을 지운 뒤 다시 올려 주세요."; break; }
-      if(x?.code==="rate_limited"){ $("uErr").textContent="잠깐 너무 많이 올렸어요. 1분 뒤 남은 사진을 다시 올려 주세요."; break; }
-    }
-    bar.style.width=((i+1)/fs.length*100)+"%";
-  }
+  const bar=$("uProg").firstElementChild;
+  const trip=state.trips.find(t=>t.id===tid)||{id:tid};
+  const {ok,fail,stop}=await uploadFiles(trip, fs, cap, i=>$("uMsg").textContent=`${i+1} / ${fs.length}장 올리는 중…`, i=>bar.style.width=((i+1)/fs.length*100)+"%");
+  if(stop) $("uErr").textContent=stop;
   $("uGo").disabled=false;
   if(fail.length){
     if(!$("uErr").textContent) $("uErr").textContent=`${fail.length}장은 올리지 못했어요 (${fail.slice(0,3).join(", ")}${fail.length>3?" 외":""}). HEIC 사진이면 휴대폰에서 JPG로 바꿔 다시 시도해 주세요.`;
