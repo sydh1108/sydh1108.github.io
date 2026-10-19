@@ -27,7 +27,8 @@
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html{scroll-behavior:smooth}
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,body::before,body::after{transition:none!important;animation:none!important}}
+/* 동작 줄이기 설정이면 움직임을 끄지만, 직접 고른 사진 전환 효과(.fx-in)는 그대로 보여 줘요 */
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*:not(.fx-in),body::before,body::after{transition:none!important;animation:none!important}}
 /* 은은한 별빛 배경: 화면에 고정된 두 겹. 작은 점(::before)은 천천히 깜빡이고, 드문드문 반짝이(::after)는 다른 박자로 빛나요 */
 body::before,body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1}
 body::before{
@@ -116,8 +117,34 @@ section+section::before{content:"";position:absolute;left:0;right:0;top:0;height
 /* 폴라로이드 콜라주 */
 .collage{position:relative;aspect-ratio:1/0.92;max-width:100%;margin-inline:auto;width:100%}
 .pol{position:absolute;margin:0;background:#fff;padding:10px 10px 0;border-radius:3px;box-shadow:var(--shadow);transition:transform .3s}
-.pol .img{background:var(--accent-soft);aspect-ratio:1;overflow:hidden;position:relative}
-.pol img{width:100%;height:100%;object-fit:cover;display:block}
+.pol .img{background:var(--accent-soft);aspect-ratio:1;overflow:hidden;position:relative;perspective:700px}
+.pol img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+/* 사진 자동 넘기기 전환 효과: 새 사진이 옛 사진 위로 들어와요 */
+.fx-in{animation:var(--fxdur,.6s) cubic-bezier(.2,.7,.2,1) both;z-index:1}
+.fx-fade{animation-name:fxFade}
+.fx-slide{animation-name:fxSlide}
+.fx-zoom{animation-name:fxZoom}
+.fx-flip{animation-name:fxFlip;backface-visibility:hidden}
+.fx-blur{animation-name:fxBlur}
+@keyframes fxFade{from{opacity:0}to{opacity:1}}
+@keyframes fxSlide{from{transform:translateX(100%)}to{transform:none}}
+@keyframes fxZoom{from{opacity:0;transform:scale(1.3)}to{opacity:1;transform:none}}
+@keyframes fxFlip{from{transform:rotateY(90deg)}to{transform:none}}
+@keyframes fxBlur{from{opacity:0;filter:blur(14px)}to{opacity:1;filter:none}}
+.collage-wrap{min-width:0}
+.slide-ctrl{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 14px;margin-top:18px;font-size:13px;color:var(--muted)}
+.slide-ctrl.off .sl-f,.slide-ctrl.off #slPrev{opacity:.5}
+.slide-ctrl .note{flex-basis:100%;text-align:center}
+.sw{display:inline-flex;align-items:center;gap:8px;cursor:pointer;color:var(--fg);font-weight:700}
+.sw input{position:absolute;opacity:0;width:1px;height:1px}
+.sw .knob{width:38px;height:22px;border-radius:999px;background:var(--line);position:relative;transition:background .2s;flex:none}
+.sw .knob::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--fg);transition:transform .2s}
+.sw input:checked+.knob{background:var(--coral)}
+.sw input:checked+.knob::after{transform:translateX(16px);background:#fff}
+.sw input:focus-visible+.knob{outline:2px solid var(--accent);outline-offset:2px}
+.sl-f{display:inline-flex;align-items:center;gap:6px}
+.sl-f input,.sl-f select{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:4px 8px;color:var(--fg)}
+.sl-f input{width:56px;text-align:center}
 .pol figcaption{font-family:var(--f-hand);font-size:21px;color:#2A3550;text-align:center;padding:6px 4px 8px;line-height:1.1;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:34px}
 .pol::before{content:"";position:absolute;top:-10px;left:50%;width:76px;height:22px;transform:translateX(-50%) rotate(-3deg);
@@ -327,10 +354,19 @@ footer small{display:block;font-family:var(--f-body);font-size:12px;margin-top:4
         </div>
         <div class="banner" id="statusBanner" hidden></div>
       </div>
+      <div class="collage-wrap">
       <div class="collage" id="collage">
         <figure class="pol"><div class="img"><div class="empty">첫 사진을 올리면<br>여기에 붙어요</div></div><figcaption>우리의 첫 장</figcaption></figure>
         <figure class="pol"><div class="img"><div class="empty"></div></div><figcaption>다음 여행지</figcaption></figure>
         <figure class="pol"><div class="img"><div class="empty"></div></div><figcaption>함께라서 좋은 날</figcaption></figure>
+      </div>
+      <div class="slide-ctrl off" id="slideCtrl" hidden>
+        <label class="sw"><input type="checkbox" id="slOn" role="switch"><span class="knob" aria-hidden="true"></span>사진 자동 넘기기</label>
+        <label class="sl-f">간격 <input id="slSec" type="number" min="1" max="60" step="1" value="2" inputmode="numeric">초</label>
+        <label class="sl-f">효과 <select id="slFx"><option value="fade">페이드</option><option value="slide">밀어내기</option><option value="zoom">줌</option><option value="flip">뒤집기</option><option value="blur">흐림</option><option value="none">없음</option></select></label>
+        <button class="btn sm ghost" type="button" id="slPrev">효과 미리보기</button>
+        <p class="note" id="slNote" hidden>사진을 올리면 자동으로 넘어가기 시작해요.</p>
+      </div>
       </div>
     </div>
   </section>
@@ -800,16 +836,86 @@ function renderHome(){
   const recent=[...state.photos].filter(p=>!used.has(p.asset)).sort((x,y)=>(y.createdAt||0)-(x.createdAt||0));
   let ri=0;
   for(let i=0;i<3;i++){
-    const c=chosen[i], p=c?null:recent[ri++], t=p&&state.trips.find(z=>z.id===p.trip);
-    const asset=c?.asset||p?.asset;
-    const cap = c ? (c.caption||COLLAGE_CAP[i]) : p ? (p.caption || (t ? (t.abroad ? t.abroadName : MUNI.get(t.muni)?.n || t.title) : "")) : COLLAGE_CAP[i];
-    cells[i].querySelector(".img").innerHTML = asset ? `<img src="${blob(asset)}" alt="${esc(cap||"여행 사진")}" loading="lazy">`
-      : `<div class="empty">${i===0?"첫 사진을 올리면<br>여기에 붙어요":""}</div>`;
-    cells[i].querySelector("figcaption").textContent = cap;
+    const c=chosen[i], p=c?null:recent[ri++];
+    // 자동 넘기기 중이면 지금 돌고 있는 사진을 그대로 두고, 꺼져 있으면 고정/자동 사진을 보여 줘요
+    const live=slide.on && slide.cur[i] && poolHas(slide.cur[i]) ? slide.cur[i] : null;
+    if(live) setSlot(i, live, capFor(live, i), null);
+    else setSlot(i, c?.asset||p?.asset||null, c ? (c.caption||COLLAGE_CAP[i]) : p ? capFor(p.asset, i) : COLLAGE_CAP[i], null);
     cells[i].classList.toggle("pick", !!state.db);
     cells[i].title = state.db ? "눌러서 이 자리 사진 고르기" : "";
   }
+  syncSlideCtrl();
 }
+// 사진 아래 글씨: 고정 사진은 정한 글씨, 앨범 사진은 사진 설명 → 지역 이름 → 여행 이름
+function capFor(asset, i){
+  const c=Object.values(state.collage).find(x=>x?.asset===asset);
+  if(c && c.caption) return c.caption;
+  const p=state.photos.find(x=>x.asset===asset), t=p&&state.trips.find(z=>z.id===p.trip);
+  if(p) return p.caption || (t ? (t.abroad ? t.abroadName : MUNI.get(t.muni)?.n || t.title) : "");
+  return COLLAGE_CAP[i];
+}
+// 한 자리의 사진을 바꿔요. 같은 사진이면 그대로 두고, fx가 있으면 전환 효과를 줘요
+function setSlot(i, asset, cap, fx){
+  const cell=$("collage").children[i], box=cell.querySelector(".img");
+  cell.querySelector("figcaption").textContent=cap;
+  if((box.dataset.asset||"")===(asset||"")) return;
+  box.dataset.asset=asset||"";
+  if(!asset){ box.innerHTML=`<div class="empty">${i===0?"첫 사진을 올리면<br>여기에 붙어요":""}</div>`; return; }
+  const img=document.createElement("img"); img.src=blob(asset); img.alt=cap||"여행 사진";
+  const olds=[...box.children];
+  if(!fx || fx==="none" || !olds.some(o=>o.tagName==="IMG")){ box.replaceChildren(img); return; }
+  img.className="fx-in fx-"+fx; box.appendChild(img);
+  const done=()=>olds.forEach(o=>o.remove());
+  img.addEventListener("animationend", done, {once:true}); setTimeout(done, 3000);
+}
+
+// ---------- 첫 화면 사진 자동 넘기기 ----------
+// 설정은 meta/collage 의 show 칸에 저장해서 두 사람 화면이 같이 바뀌어요: {on, sec, fx}
+const FX=["fade","slide","zoom","flip","blur","none"];
+const slide={on:false, sec:2, fx:"fade", cur:[null,null,null], last:-1, timer:0};
+const slidePool=()=>{ const s=new Set(state.photos.map(p=>p.asset)); for(const c of Object.values(state.collage)) if(c?.own&&c.asset) s.add(c.asset); return [...s].filter(a=>urls.has(a)); };
+const poolHas=a=>slidePool().includes(a);
+function applyShow(){
+  const sh=state.collage.show||{};
+  slide.on=!!sh.on; slide.sec=Math.min(60,Math.max(1,+sh.sec||2)); slide.fx=FX.includes(sh.fx)?sh.fx:"fade";
+  $("collage").style.setProperty("--fxdur", Math.min(.9, slide.sec*.4)+"s");
+  clearTimeout(slide.timer);
+  if(slide.on) slide.timer=setTimeout(slideTick, slide.sec*1000);
+  else slide.cur=[null,null,null];
+}
+function slideTick(){
+  clearTimeout(slide.timer);
+  if(!slide.on) return;
+  slide.timer=setTimeout(slideTick, slide.sec*1000);
+  // 다른 창을 보고 있거나 사진 창이 열려 있으면 잠깐 쉬어요
+  if(document.hidden || document.querySelector("dialog[open]")) return;
+  const pool=slidePool(); if(!pool.length) return;
+  const shown=[0,1,2].map(i=>$("collage").children[i].querySelector(".img").dataset.asset||"");
+  let i; do{ i=Math.floor(Math.random()*3); }while(i===slide.last && pool.length>1);
+  slide.last=i;
+  const fresh=pool.filter(a=>!shown.includes(a));
+  const cand=fresh.length?fresh:pool.filter(a=>a!==shown[i]);
+  if(!cand.length) return;
+  const a=cand[Math.floor(Math.random()*cand.length)];
+  slide.cur[i]=a;
+  setSlot(i, a, capFor(a, i), slide.fx);
+}
+function syncSlideCtrl(){
+  const ctrl=$("slideCtrl"); ctrl.hidden=!state.db;
+  $("slOn").checked=slide.on; $("slSec").value=slide.sec; $("slFx").value=slide.fx;
+  ctrl.classList.toggle("off", !slide.on);
+  $("slNote").hidden=!(slide.on && !slidePool().length);
+}
+async function saveShow(patch){
+  const show={on:slide.on, sec:slide.sec, fx:slide.fx, ...patch};
+  state.collage={...state.collage, show}; applyShow(); syncSlideCtrl();
+  try{ await state.db.doc("meta/collage").set({...state.collage, show}); }catch(_){ toast("설정을 저장하지 못했어요"); }
+}
+$("slOn").addEventListener("change", ()=>{ saveShow({on:$("slOn").checked}); if(!$("slOn").checked) renderHome(); });
+$("slSec").addEventListener("change", ()=>{ const v=Math.round(+$("slSec").value); saveShow({sec:Math.min(60,Math.max(1,v||2))}); });
+$("slFx").addEventListener("change", ()=>saveShow({fx:$("slFx").value}));
+$("slPrev").addEventListener("click", ()=>{ const f=$("slFx").value; const order=["fade","slide","zoom","flip","blur"]; const fx=order.includes(f)?f:"fade";
+  const box=$("collage").children[0].querySelector(".img"); const a=box.dataset.asset; if(!a) return; box.dataset.asset=""; setSlot(0, a, capFor(a,0), fx); });
 
 // ---------- 첫 화면 폴라로이드 3장 직접 고르기 ----------
 const COLLAGE_CAP=["우리의 첫 장","다음 여행지","함께라서 좋은 날"];
@@ -1233,7 +1339,7 @@ function askLogin(be){
   syncControls(); renderSide();
   be.startRealtime();
   db.doc("meta/couple").onSnapshot(s=>{ state.couple = s.exists ? (dataOf(s)||{}) : {}; renderHome(); }, ()=>{});
-  db.doc("meta/collage").onSnapshot(async s=>{ state.collage = s.exists ? (dataOf(s)||{}) : {}; await signMissing(); renderHome(); }, ()=>{});
+  db.doc("meta/collage").onSnapshot(async s=>{ state.collage = s.exists ? (dataOf(s)||{}) : {}; await signMissing(); applyShow(); renderHome(); }, ()=>{});
   db.collection("trips").onSnapshot(async s=>{ state.trips=s.docs.map(d=>fixRegion({id:d.id,...dataOf(d)})); await signMissing(); renderAll(); },()=>banner("여행 목록을 불러오지 못했어요. 새로고침해 주세요."));
   db.collection("photos").onSnapshot(async s=>{ state.photos=s.docs.map(d=>({id:d.id,...dataOf(d)})); await signMissing(); renderAll(); }, ()=>banner("사진을 불러오지 못했어요. 새로고침해 주세요."));
 })();
