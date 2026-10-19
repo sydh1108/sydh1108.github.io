@@ -331,7 +331,6 @@ footer small{display:block;font-family:var(--f-body);font-size:12px;margin-top:4
   <section id="map">
     <div class="sec-head">
       <div><div class="eyebrow">우리가 다녀온 곳</div><h2>여행지도</h2><p>시·도를 누르면 확대되고, 시·군·구를 누르면 그곳 사진이 열려요.</p></div>
-      <button class="btn" id="mapAddTrip" type="button">여행 추가</button>
     </div>
     <div class="map-grid">
       <div>
@@ -341,7 +340,7 @@ footer small{display:block;font-family:var(--f-body);font-size:12px;margin-top:4
         </div>
         <div class="map-box" id="mapBox"></div>
         <div class="map-foot">
-          <span id="mapCount">전국 229곳 중 0곳 색칠</span>
+          <span id="mapCount">전국 230곳 중 0곳 색칠</span>
           <div class="legend" aria-label="색 범례">
             <span><i style="background:var(--m-v)"></i>다녀옴</span>
             <span><i style="background:var(--m1)"></i>1–2장</span>
@@ -358,8 +357,7 @@ footer small{display:block;font-family:var(--f-body);font-size:12px;margin-top:4
 
   <section id="album">
     <div class="sec-head">
-      <div><div class="eyebrow">추억 보관함</div><h2>사진첩</h2><p>휴대폰에서 바로 여러 장을 올릴 수 있어요.</p></div>
-      <button class="btn primary" id="albumUpload" type="button">사진 올리기</button>
+      <div><div class="eyebrow">추억 보관함</div><h2>사진첩</h2><p>오른쪽 아래 ＋ 사진으로 휴대폰에서 바로 여러 장을 올릴 수 있어요.</p></div>
     </div>
     <div class="chips" id="chips"></div>
     <div class="trip-banner" id="tripBanner" hidden></div>
@@ -817,8 +815,8 @@ function renderAlbum(){
 function renderAll(){ computeStats(); renderHome(); paintMap(); renderSide(); renderAlbum(); syncControls(); }
 function syncControls(){
   const can=!!state.assets;
-  $("albumUpload").hidden=!can; $("fab").hidden=!can;
-  ["heroAddTrip","mapAddTrip","heroSettings"].forEach(id=>$(id).hidden=!state.db||!state.canWrite);
+  $("fab").hidden=!can;
+  ["heroAddTrip","heroSettings"].forEach(id=>$(id).hidden=!state.db||!state.canWrite);
 }
 function showTrip(id){ state.filter=id; renderSide(); renderAlbum(); $("album").scrollIntoView(); }
 
@@ -841,8 +839,8 @@ document.addEventListener("click", e=>{
   if(el.matches("[data-trip]")) return showTrip(el.dataset.trip);
   if(el.matches(".ph")) return openLb($("grid")._list, +el.dataset.i);
 });
-$("heroAddTrip").onclick=$("mapAddTrip").onclick=()=>openTrip();
-$("albumUpload").onclick=$("fab").onclick=()=>openUpload();
+$("heroAddTrip").onclick=()=>openTrip();
+$("fab").onclick=()=>openUpload();
 $("heroSettings").onclick=openCouple;
 
 // ---------- 우리 정보 ----------
@@ -951,12 +949,25 @@ $("delYes").addEventListener("click", async()=>{
 });
 
 // ---------- 사진 올리기 ----------
+const NEW_TRIP="__new__";
+// "＋ 새 여행 만들기"를 고르면 여행 정보 창으로 넘어가요. 이미 고른 사진도 그대로 따라가요
+function switchToNewTrip(){
+  const fs=[...$("uFiles").files];
+  $("dlgUp").close(); openTrip();
+  if(fs.length){
+    const dt=new DataTransfer(); fs.forEach(f=>dt.items.add(f));
+    $("tFiles").files=dt.files; $("tFiles").dispatchEvent(new Event("change"));
+  }
+}
+$("uTrip").addEventListener("change", ()=>{ if($("uTrip").value===NEW_TRIP) switchToNewTrip(); });
 function openUpload(tripId){
   if(!state.assets) return;
-  if(!state.trips.length){ toast("먼저 여행을 하나 추가해 주세요"); return openTrip(); }
+  // 여행이 아직 없으면 바로 새 여행 창으로 (그 창에서도 사진을 같이 고를 수 있어요)
+  if(!state.trips.length) return openTrip();
   const ts=sortedTrips();
   const pre = ts.some(t=>t.id===tripId) ? tripId : ts.some(t=>t.id===state.filter) ? state.filter : ts[0].id;
-  $("uTrip").innerHTML=ts.map(t=>`<option value="${esc(t.id)}"${t.id===pre?" selected":""}>${esc(t.title)} · ${esc(fmt(t.start))}</option>`).join("");
+  $("uTrip").innerHTML=`<option value="${NEW_TRIP}">＋ 새 여행 만들기</option>`
+    + ts.map(t=>`<option value="${esc(t.id)}"${t.id===pre?" selected":""}>${esc(t.title)} · ${esc(fmt(t.start))}</option>`).join("");
   $("uFiles").value=""; $("uPrev").innerHTML=""; $("uCap").value=""; $("uErr").hidden=true; $("uErr").textContent=""; $("uProg").hidden=true; $("uGo").disabled=false;
   $("uProg").firstElementChild.style.width="0";
   $("uMsg").textContent="긴 쪽 2048px로 줄여서 올려요. 원본은 휴대폰에 그대로 남아 있어요.";
@@ -1004,6 +1015,7 @@ async function uploadFiles(trip, fs, cap, onStart, onDone){
 $("formUp").addEventListener("submit", async e=>{
   e.preventDefault();
   const fs=[...$("uFiles").files]; const tid=$("uTrip").value; const cap=$("uCap").value.trim();
+  if(tid===NEW_TRIP) return switchToNewTrip();
   if(!fs.length){ $("uErr").textContent="올릴 사진을 골라 주세요."; $("uErr").hidden=false; return; }
   $("uErr").hidden=true; $("uErr").textContent=""; $("uGo").disabled=true; $("uProg").hidden=false;
   const bar=$("uProg").firstElementChild;
