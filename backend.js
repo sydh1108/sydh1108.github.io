@@ -10,6 +10,7 @@ const sb = configured ? window.supabase.createClient(cfg.supabaseUrl, cfg.supaba
 const newId = () => crypto.randomUUID().replace(/-/g, "").slice(0, 20);
 const splitPath = p => { const i = p.indexOf("/"); return [p.slice(0, i), p.slice(i + 1)]; };
 const fail = error => { if (error) throw error; };
+const idToEmail = id => id.includes("@") ? id : `${id.trim().toLowerCase()}@example.com`;
 
 // ---------- 컬렉션 구독 ----------
 const subs = new Map();     // collection → Set<{cb, err}>
@@ -106,8 +107,13 @@ const auth = {
   async session() { const { data } = await sb.auth.getSession(); return data.session; },
   // Supabase는 이메일로만 로그인해서, 아이디만 적으면 뒤에 @example.com을 붙여요
   async signIn(id, password) {
-    const email = id.includes("@") ? id : `${id.toLowerCase()}@example.com`;
-    const { data, error } = await sb.auth.signInWithPassword({ email, password }); fail(error); return data.session;
+    const { data, error } = await sb.auth.signInWithPassword({ email: idToEmail(id), password }); fail(error); return data.session;
+  },
+  // 처음 가입 (Supabase에서 가입을 열어 둔 동안만 돼요)
+  async signUp(id, password) {
+    const { data, error } = await sb.auth.signUp({ email: idToEmail(id), password }); fail(error);
+    if (!data.session) throw new Error("no_session");
+    return data.session;
   },
   async signOut() { await sb.auth.signOut(); },
   // 로그인은 됐지만 members 표에 없는 사람인지 확인
