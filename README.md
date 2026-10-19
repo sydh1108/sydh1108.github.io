@@ -7,7 +7,7 @@ GitHub Pages로 보여 주고, 여행 기록과 사진은 Supabase(비공개)에
 | 파일 | 하는 일 |
 | --- | --- |
 | `index.html` | 화면 전체 (홈 · 여행지도 · 사진첩) |
-| `korea-geo.js` | 시·도 / 시·군·구 지도 데이터 |
+| `korea-geo.js` | 시·도 / 시·군·구 지도 데이터 (2026년 10월 1일 행정동 경계를 시·군·구로 합침. 출처: [vuski/admdongkor](https://github.com/vuski/admdongkor) ver20261001) |
 | `backend.js` | Supabase 연결 (문서 저장 · 사진 업로드 · 로그인) |
 | `config.js` | Supabase 주소와 anon 키 |
 | `supabase-setup.sql` | Supabase에 표 · 사진 버킷 · 접근 규칙을 만드는 SQL |

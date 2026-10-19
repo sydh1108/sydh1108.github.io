@@ -136,10 +136,10 @@ section+section::before{content:"";position:absolute;left:0;right:0;top:0;height
 .map-bar{display:flex;align-items:center;gap:10px;min-height:36px;margin-bottom:8px;flex-wrap:wrap}
 .crumb{font-size:14px;color:var(--muted)}
 .crumb b{color:var(--fg)}
-.map-box{position:relative;border-radius:var(--r);overflow:hidden;aspect-ratio:20/21;max-width:100%;box-shadow:var(--shadow);
+.map-box{position:relative;border-radius:var(--r);overflow:hidden;aspect-ratio:4/5;max-width:100%;box-shadow:var(--shadow);
   background:var(--sea) radial-gradient(color-mix(in srgb,var(--accent) 16%,transparent) 1px,transparent 1.4px) 0 0/16px 16px}
 .map-box svg{display:block;width:100%;height:100%;touch-action:pan-x pan-y;cursor:grab;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
-.geo path{fill:var(--land);stroke:var(--geo-stroke);stroke-width:1;vector-effect:non-scaling-stroke;stroke-linejoin:round;cursor:pointer;transition:fill .35s,opacity .35s}
+.geo path{fill:var(--land);fill-rule:evenodd;stroke:var(--geo-stroke);stroke-width:1;vector-effect:non-scaling-stroke;stroke-linejoin:round;cursor:pointer;transition:fill .35s,opacity .35s}
 .geo path:hover{fill:var(--land-hover)}
 .geo path[data-lv="v"]{fill:var(--m-v)}
 .geo path[data-lv="1"]{fill:var(--m1)}
@@ -196,7 +196,7 @@ section+section::before{content:"";position:absolute;left:0;right:0;top:0;height
   display:grid;place-items:center;box-shadow:var(--shadow);padding:0}
 .map-ctrl button:hover{border-color:var(--accent);color:var(--accent)}
 .map-ctrl svg{width:18px;height:18px}
-.map-hint{position:absolute;left:10px;bottom:10px;font-size:12px;color:var(--muted);background:color-mix(in srgb,var(--surface) 85%,transparent);
+.map-hint{position:absolute;left:10px;top:10px;max-width:calc(100% - 70px);font-size:12px;color:var(--muted);background:color-mix(in srgb,var(--surface) 85%,transparent);
   padding:3px 9px;border-radius:999px;pointer-events:none;z-index:2}
 .map-box.grabbing svg,.map-box.grabbing svg *{cursor:grabbing}
 .map-box.holding{box-shadow:0 0 0 3px var(--accent),var(--shadow)}
@@ -1070,6 +1070,14 @@ $("lbDel").onclick=()=>{
 // ---------- 연결 ----------
 initMap();
 renderAll();
+// 2026년 행정구역 개편 전에 저장한 여행도 새 지도에 맞게 읽어요.
+// 인천 중구·동구 → 제물포구, 서구 → 서해구(대부분 지역), 시·도는 시·군·구에서 다시 정해요(광주 → 전남광주, 군위 → 대구)
+const LEGACY_MUNI={"23010":"23090","23020":"23090","23080":"23120"};
+function fixRegion(t){
+  if(t.abroad||!t.muni) return t;
+  const muni=LEGACY_MUNI[t.muni]||t.muni, m=MUNI.get(muni);
+  return m ? {...t, muni, prov:m.p} : t;
+}
 // 아직 서명 주소가 없는 사진·대표 사진 주소를 받아 와요
 async function signMissing(){
   const ids=[...new Set([...state.photos.map(p=>p.asset), ...state.trips.map(t=>t.cover)].filter(id=>id&&!urls.has(id)))];
@@ -1128,7 +1136,7 @@ function askLogin(be){
   syncControls(); renderSide();
   be.startRealtime();
   db.doc("meta/couple").onSnapshot(s=>{ state.couple = s.exists ? (dataOf(s)||{}) : {}; renderHome(); }, ()=>{});
-  db.collection("trips").onSnapshot(async s=>{ state.trips=s.docs.map(d=>({id:d.id,...dataOf(d)})); await signMissing(); renderAll(); }, ()=>banner("여행 목록을 불러오지 못했어요. 새로고침해 주세요."));
+  db.collection("trips").onSnapshot(async s=>{ state.trips=s.docs.map(d=>fixRegion({id:d.id,...dataOf(d)})); await signMissing(); renderAll(); },()=>banner("여행 목록을 불러오지 못했어요. 새로고침해 주세요."));
   db.collection("photos").onSnapshot(async s=>{ state.photos=s.docs.map(d=>({id:d.id,...dataOf(d)})); await signMissing(); renderAll(); }, ()=>banner("사진을 불러오지 못했어요. 새로고침해 주세요."));
 })();
 })();
