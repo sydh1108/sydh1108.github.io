@@ -352,8 +352,8 @@ footer small{display:block;font-family:var(--f-body);font-size:12px;margin-top:4
 <!-- 로그인 -->
 <dialog id="dlgLogin"><form class="dlg" id="formLogin" method="dialog">
   <h3>우리 둘만 들어와요</h3>
-  <p class="note">앨범에 등록된 이메일과 비밀번호로 로그인해 주세요.</p>
-  <div class="field"><label for="lEmail">이메일</label><input id="lEmail" type="email" autocomplete="username" required></div>
+  <p class="note">앨범에 등록된 아이디와 비밀번호로 로그인해 주세요.</p>
+  <div class="field"><label for="lEmail">아이디</label><input id="lEmail" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required></div>
   <div class="field"><label for="lPw">비밀번호</label><input id="lPw" type="password" autocomplete="current-password" required></div>
   <p class="err" id="loginErr" hidden></p>
   <div class="dlg-actions"><button class="btn primary" type="submit" id="loginGo">로그인</button></div>
@@ -1020,7 +1020,7 @@ function askLogin(be){
     $("formLogin").onsubmit=async e=>{
       e.preventDefault(); err.hidden=true; $("loginGo").disabled=true;
       try{ await be.auth.signIn($("lEmail").value.trim(), $("lPw").value); $("lPw").value=""; d.close(); resolve(); }
-      catch(_){ err.textContent="이메일이나 비밀번호가 맞지 않아요."; err.hidden=false; }
+      catch(_){ err.textContent="아이디나 비밀번호가 맞지 않아요."; err.hidden=false; }
       finally{ $("loginGo").disabled=false; }
     };
     d.showModal();

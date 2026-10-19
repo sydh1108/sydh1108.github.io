@@ -104,7 +104,11 @@ const assets = {
 // ---------- 로그인 ----------
 const auth = {
   async session() { const { data } = await sb.auth.getSession(); return data.session; },
-  async signIn(email, password) { const { data, error } = await sb.auth.signInWithPassword({ email, password }); fail(error); return data.session; },
+  // Supabase는 이메일로만 로그인해서, 아이디만 적으면 뒤에 @example.com을 붙여요
+  async signIn(id, password) {
+    const email = id.includes("@") ? id : `${id.toLowerCase()}@example.com`;
+    const { data, error } = await sb.auth.signInWithPassword({ email, password }); fail(error); return data.session;
+  },
   async signOut() { await sb.auth.signOut(); },
   // 로그인은 됐지만 members 표에 없는 사람인지 확인
   async isMember() { const { data, error } = await sb.rpc("is_member"); fail(error); return !!data; }
