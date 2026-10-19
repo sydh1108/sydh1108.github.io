@@ -1,4 +1,4 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#18294A"><style>:root{color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#0E1626;color:#E8EEF8}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>둘의 여행 앨범</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -6,36 +6,22 @@
 <style>
 /* Layout: 바다 엽서 스크랩북 — 위쪽 하늘빛 → 아래 옅은 바다. 사진은 폴라로이드+마스킹테이프, 소제목은 손글씨, 섹션 사이는 물결선.
    파랑(바다)이 주색, 코랄(노을)은 하트·D-day·선택 강조, 모래색은 테이프에만. */
+/* 밤하늘 한 가지 색으로 통일 (휴대폰 라이트/다크 설정과 관계없이 항상 같은 색) */
 :root{
-  --bg:#F3F8FD; --sky:#D6E8FB; --surface:#FFFFFF; --fg:#17243F; --muted:#64728C; --line:#DAE5F2;
-  --accent:#2B62D9; --accent-ink:#FFFFFF; --accent-soft:#E4EEFC;
-  --coral:#F2694B; --coral-soft:#FFE7DF; --sand:#FFDB94;
-  --land:#FFFFFF; --sea:#E6F0FB; --geo-stroke:#C5D7EE;
-  --m-v:#DCEAFA; --m1:#AFCDF2; --m2:#77A8EA; --m3:#3F7EDB; --m4:#1D4CB0;
-  --shadow:0 1px 2px rgba(23,36,63,.06),0 10px 28px rgba(23,36,63,.09);
-  --star:rgba(96,136,214,.42); --star-glow:rgba(242,170,90,.5);
+  color-scheme:dark;
+  --bg:#0E1626; --sky:#18294A; --surface:#16213A; --fg:#E8EEF8; --muted:#9AA8C2; --line:#27354F;
+  --accent:#7AA2FF; --accent-ink:#0E1626; --accent-soft:#1D2B4C;
+  --coral:#FF8F73; --coral-soft:#3B2531; --sand:#C9A563;
+  --land:#22304E; --sea:#111C31; --geo-stroke:#0E1626;
+  --m-v:#2A3F68; --m1:#31599C; --m2:#4372C6; --m3:#5F90EC; --m4:#9BBDFF;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.35);
+  --star:rgba(255,255,255,.95); --star-halo:rgba(200,220,255,.35); --star-glow:rgba(255,226,170,.95);
   --f-display:"Gowun Batang","Noto Serif KR","Apple SD Gothic Neo",serif;
   --f-body:"Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   --f-hand:"Nanum Pen Script","Gaegu","Apple SD Gothic Neo",cursive;
   --f-mono:"IBM Plex Mono",ui-monospace,"SF Mono",Consolas,monospace;
   --r:14px;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0E1626; --sky:#18294A; --surface:#16213A; --fg:#E8EEF8; --muted:#9AA8C2; --line:#27354F;
-  --accent:#7AA2FF; --accent-ink:#0E1626; --accent-soft:#1D2B4C;
-  --coral:#FF8F73; --coral-soft:#3B2531; --sand:#C9A563;
-  --land:#22304E; --sea:#111C31; --geo-stroke:#0E1626;
-  --m-v:#2A3F68; --m1:#31599C; --m2:#4372C6; --m3:#5F90EC; --m4:#9BBDFF;
-  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.35); color-scheme:dark;
-  --star:rgba(255,255,255,.7); --star-glow:rgba(255,224,170,.65)}}
-:root[data-theme="dark"]{
-  --bg:#0E1626; --sky:#18294A; --surface:#16213A; --fg:#E8EEF8; --muted:#9AA8C2; --line:#27354F;
-  --accent:#7AA2FF; --accent-ink:#0E1626; --accent-soft:#1D2B4C;
-  --coral:#FF8F73; --coral-soft:#3B2531; --sand:#C9A563;
-  --land:#22304E; --sea:#111C31; --geo-stroke:#0E1626;
-  --m-v:#2A3F68; --m1:#31599C; --m2:#4372C6; --m3:#5F90EC; --m4:#9BBDFF;
-  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.35); color-scheme:dark;
-  --star:rgba(255,255,255,.7); --star-glow:rgba(255,224,170,.65)}
 
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -60,13 +46,15 @@ body::before{
   animation:twinkle 7s ease-in-out infinite alternate}
 body::after{
   background-image:
-    radial-gradient(circle at 60px 80px,var(--star-glow) 0 1.4px,transparent 4px),
-    radial-gradient(circle at 410px 250px,var(--star-glow) 0 1.2px,transparent 3.5px),
-    radial-gradient(circle at 250px 470px,var(--star-glow) 0 1.5px,transparent 4.5px),
-    radial-gradient(circle at 500px 40px,var(--star) 0 1.3px,transparent 4px);
+    radial-gradient(circle at 60px 80px,var(--star-glow) 0 1.6px,var(--star-halo) 2.4px,transparent 7px),
+    radial-gradient(circle at 410px 250px,var(--star-glow) 0 1.4px,var(--star-halo) 2.2px,transparent 6px),
+    radial-gradient(circle at 250px 470px,var(--star-glow) 0 1.8px,var(--star-halo) 2.6px,transparent 8px),
+    radial-gradient(circle at 500px 40px,var(--star) 0 1.5px,var(--star-halo) 2.3px,transparent 7px),
+    radial-gradient(circle at 150px 330px,var(--star) 0 1.3px,var(--star-halo) 2px,transparent 6px),
+    radial-gradient(circle at 340px 120px,var(--star-glow) 0 1.2px,var(--star-halo) 2px,transparent 5px);
   background-size:560px 560px;
   animation:twinkle 4.5s ease-in-out -2s infinite alternate}
-@keyframes twinkle{from{opacity:.35}to{opacity:1}}
+@keyframes twinkle{from{opacity:.45}to{opacity:1}}
 body{background:var(--bg) linear-gradient(180deg,var(--sky) 0,var(--bg) 640px) no-repeat;color:var(--fg);font-family:var(--f-body);font-size:15.5px;line-height:1.65;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .wrap{max-width:1080px;margin:0 auto}
@@ -140,7 +128,7 @@ section+section::before{content:"";position:absolute;left:0;right:0;top:0;height
 .pol:nth-child(3)::before{background:color-mix(in srgb,var(--accent) 35%,transparent)}
 .pol:hover{transform:rotate(0) scale(1.02);z-index:4}
 .pol .empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:var(--accent);font-size:13px;padding:10px;
-  background:repeating-linear-gradient(45deg,var(--accent-soft) 0 10px,color-mix(in srgb,var(--accent-soft) 60%,#fff) 10px 20px)}
+  background:repeating-linear-gradient(45deg,var(--accent-soft) 0 10px,var(--sky) 10px 20px)}
 
 /* map */
 .map-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:28px;align-items:start}
