@@ -133,7 +133,13 @@ section+section::before{content:"";position:absolute;left:0;right:0;top:0;height
 @keyframes fxBlur{from{opacity:0;filter:blur(14px)}to{opacity:1;filter:none}}
 .collage-wrap{min-width:0}
 .slide-ctrl{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 14px;margin-top:18px;font-size:13px;color:var(--muted)}
-.slide-ctrl.off .sl-f,.slide-ctrl.off #slPrev{opacity:.5}
+/* 간격·효과는 켰을 때만 보여요 */
+.slide-ctrl.off .sl-f,.slide-ctrl.off #slPrev{display:none}
+/* 마우스가 있는 기기: 사진 위나 조절 줄에 마우스를 올렸을 때만 나타나고, 벗어나면 잠시 뒤 사라져요 */
+@media (hover:hover) and (pointer:fine){
+  .collage-wrap .slide-ctrl{opacity:0;visibility:hidden;transition:opacity .35s ease .9s,visibility 0s linear 1.25s}
+  .collage-wrap:hover .slide-ctrl,.slide-ctrl:focus-within{opacity:1;visibility:visible;transition:opacity .2s ease 0s,visibility 0s}
+}
 .slide-ctrl .note{flex-basis:100%;text-align:center}
 .sw{display:inline-flex;align-items:center;gap:8px;cursor:pointer;color:var(--fg);font-weight:700}
 .sw input{position:absolute;opacity:0;width:1px;height:1px}
