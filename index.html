@@ -13,6 +13,7 @@
   --land:#FFFFFF; --sea:#E6F0FB; --geo-stroke:#C5D7EE;
   --m-v:#DCEAFA; --m1:#AFCDF2; --m2:#77A8EA; --m3:#3F7EDB; --m4:#1D4CB0;
   --shadow:0 1px 2px rgba(23,36,63,.06),0 10px 28px rgba(23,36,63,.09);
+  --star:rgba(96,136,214,.42); --star-glow:rgba(242,170,90,.5);
   --f-display:"Gowun Batang","Noto Serif KR","Apple SD Gothic Neo",serif;
   --f-body:"Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   --f-hand:"Nanum Pen Script","Gaegu","Apple SD Gothic Neo",cursive;
@@ -25,19 +26,47 @@
   --coral:#FF8F73; --coral-soft:#3B2531; --sand:#C9A563;
   --land:#22304E; --sea:#111C31; --geo-stroke:#0E1626;
   --m-v:#2A3F68; --m1:#31599C; --m2:#4372C6; --m3:#5F90EC; --m4:#9BBDFF;
-  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.35); color-scheme:dark}}
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.35); color-scheme:dark;
+  --star:rgba(255,255,255,.7); --star-glow:rgba(255,224,170,.65)}}
 :root[data-theme="dark"]{
   --bg:#0E1626; --sky:#18294A; --surface:#16213A; --fg:#E8EEF8; --muted:#9AA8C2; --line:#27354F;
   --accent:#7AA2FF; --accent-ink:#0E1626; --accent-soft:#1D2B4C;
   --coral:#FF8F73; --coral-soft:#3B2531; --sand:#C9A563;
   --land:#22304E; --sea:#111C31; --geo-stroke:#0E1626;
   --m-v:#2A3F68; --m1:#31599C; --m2:#4372C6; --m3:#5F90EC; --m4:#9BBDFF;
-  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.35); color-scheme:dark}
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.35); color-scheme:dark;
+  --star:rgba(255,255,255,.7); --star-glow:rgba(255,224,170,.65)}
 
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html{scroll-behavior:smooth}
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,body::before,body::after{transition:none!important;animation:none!important}}
+/* 은은한 별빛 배경: 화면에 고정된 두 겹. 작은 점(::before)은 천천히 깜빡이고, 드문드문 반짝이(::after)는 다른 박자로 빛나요 */
+body::before,body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1}
+body::before{
+  background-image:
+    radial-gradient(circle at 23px 41px,var(--star) 0 1px,transparent 1.6px),
+    radial-gradient(circle at 131px 17px,var(--star) 0 .8px,transparent 1.4px),
+    radial-gradient(circle at 197px 109px,var(--star) 0 1.1px,transparent 1.7px),
+    radial-gradient(circle at 71px 163px,var(--star) 0 .7px,transparent 1.3px),
+    radial-gradient(circle at 167px 211px,var(--star) 0 .9px,transparent 1.5px),
+    radial-gradient(circle at 9px 229px,var(--star) 0 .8px,transparent 1.4px),
+    radial-gradient(circle at 89px 97px,var(--star) 0 .6px,transparent 1.2px),
+    radial-gradient(circle at 311px 61px,var(--star) 0 1px,transparent 1.6px),
+    radial-gradient(circle at 263px 283px,var(--star) 0 .8px,transparent 1.4px),
+    radial-gradient(circle at 349px 197px,var(--star) 0 .7px,transparent 1.3px),
+    radial-gradient(circle at 239px 157px,var(--star) 0 .6px,transparent 1.2px);
+  background-size:240px 240px,240px 240px,240px 240px,240px 240px,240px 240px,240px 240px,240px 240px,370px 370px,370px 370px,370px 370px,370px 370px;
+  animation:twinkle 7s ease-in-out infinite alternate}
+body::after{
+  background-image:
+    radial-gradient(circle at 60px 80px,var(--star-glow) 0 1.4px,transparent 4px),
+    radial-gradient(circle at 410px 250px,var(--star-glow) 0 1.2px,transparent 3.5px),
+    radial-gradient(circle at 250px 470px,var(--star-glow) 0 1.5px,transparent 4.5px),
+    radial-gradient(circle at 500px 40px,var(--star) 0 1.3px,transparent 4px);
+  background-size:560px 560px;
+  animation:twinkle 4.5s ease-in-out -2s infinite alternate}
+@keyframes twinkle{from{opacity:.35}to{opacity:1}}
 body{background:var(--bg) linear-gradient(180deg,var(--sky) 0,var(--bg) 640px) no-repeat;color:var(--fg);font-family:var(--f-body);font-size:15.5px;line-height:1.65;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .wrap{max-width:1080px;margin:0 auto}
