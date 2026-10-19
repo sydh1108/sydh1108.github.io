@@ -1,0 +1,38 @@
+{
+  "backend.js": {
+    "mtime": 1792411028.8438857,
+    "seen": 1792419735.7041461,
+    "ast_hash": "715a149d0cd0166b63500b54214785a2",
+    "semantic_hash": ""
+  },
+  "config.js": {
+    "mtime": 1792411028.4126575,
+    "seen": 1792419735.7041461,
+    "ast_hash": "ec12170becc9027d0822eb9b31345af2",
+    "semantic_hash": ""
+  },
+  "korea-geo.js": {
+    "mtime": 1792416196.444263,
+    "seen": 1792419735.7041461,
+    "ast_hash": "eec3e4c442358619f5f197db53f4893e",
+    "semantic_hash": ""
+  },
+  "serve.ps1": {
+    "mtime": 1792411028.2364385,
+    "seen": 1792419735.7041461,
+    "ast_hash": "b6d330fe0c2531fbd2d8ad22b90a8099",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1792416158.4756873,
+    "seen": 1792419735.7041461,
+    "ast_hash": "31e70353960e68de8327ce5dbd9dfb42",
+    "semantic_hash": ""
+  },
+  "index.html": {
+    "mtime": 1792418733.3219316,
+    "seen": 1792419735.7041461,
+    "ast_hash": "dddb35fa0d88255bca441a2945b5a5d7",
+    "semantic_hash": ""
+  }
+}

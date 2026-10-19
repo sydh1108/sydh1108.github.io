@@ -173,6 +173,15 @@ section+section::before{content:"";position:absolute;left:0;right:0;top:0;height
 /* map */
 .map-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:28px;align-items:start}
 .map-grid.solo{grid-template-columns:minmax(0,560px);justify-content:center}
+/* 해외 탭: 세계 지도는 가로로 길어서 넓게 */
+body.world .map-grid.solo{grid-template-columns:minmax(0,1fr)}
+body.world .map-box{aspect-ratio:2.25/1}
+.geo path.dot{stroke-width:1.5}
+.geo path[data-home]{opacity:.55}
+/* 맨 위 국내/해외 탭 */
+.scope-tabs{display:flex;gap:2px;padding:3px;border-radius:999px;background:var(--surface);border:1px solid var(--line)}
+.scope-tabs button{border:0;background:transparent;padding:5px 14px;border-radius:999px;font-size:14px;font-weight:700;color:var(--muted)}
+.scope-tabs button[aria-selected="true"]{background:var(--coral);color:#fff}
 .map-bar{display:flex;align-items:center;gap:10px;min-height:36px;margin-bottom:8px;flex-wrap:wrap}
 .crumb{font-size:14px;color:var(--muted)}
 .crumb b{color:var(--fg)}
@@ -237,7 +246,8 @@ section+section::before{content:"";position:absolute;left:0;right:0;top:0;height
 .map-ctrl button:hover{border-color:var(--accent);color:var(--accent)}
 .map-ctrl svg{width:18px;height:18px}
 .map-hint{position:absolute;left:10px;top:10px;max-width:calc(100% - 70px);font-size:12px;color:var(--muted);background:color-mix(in srgb,var(--surface) 85%,transparent);
-  padding:3px 9px;border-radius:999px;pointer-events:none;z-index:2}
+  padding:3px 9px;border-radius:999px;pointer-events:none;z-index:2;transition:opacity .6s}
+.map-hint.gone{opacity:0}
 .map-box.grabbing svg,.map-box.grabbing svg *{cursor:grabbing}
 .map-box.holding{box-shadow:0 0 0 3px var(--accent),var(--shadow)}
 .tag{font-size:11px;border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:2px;background:var(--accent-soft);color:var(--accent)}
@@ -326,6 +336,8 @@ footer small{display:block;font-family:var(--f-body);font-size:12px;margin-top:4
 @media (max-width:480px){
   section{padding-block:42px}
   .brand span{display:none}
+  .scope-tabs button{padding:4px 10px;font-size:13px}
+  .nav nav a{padding:6px 5px;font-size:13px}
   .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
   .row2{grid-template-columns:1fr}
   .grid{columns:2 140px;column-gap:10px}
@@ -337,6 +349,10 @@ footer small{display:block;font-family:var(--f-body);font-size:12px;margin-top:4
 
 <header class="nav"><div class="wrap">
   <div class="brand"><svg class="heart" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.8 4.5c2.2 0 3.6 1.2 5.2 3 1.6-1.8 3-3 5.2-3 3.8 0 5.9 3.9 4.4 7.3C19.5 16.4 12 21 12 21z"/></svg><span id="brandName">둘의 여행 앨범</span></div>
+  <div class="scope-tabs" role="tablist" aria-label="국내/해외">
+    <button type="button" role="tab" id="tabKr" data-scope="kr">국내</button>
+    <button type="button" role="tab" id="tabWorld" data-scope="world">해외</button>
+  </div>
   <nav><a href="#home">홈</a><a href="#map">여행지도</a><a href="#album">사진첩</a></nav>
 </div></header>
 
@@ -349,7 +365,7 @@ footer small{display:block;font-family:var(--f-body);font-size:12px;margin-top:4
         <div class="dday" id="dday">처음 만난 날을 입력하면 함께한 날짜가 표시돼요.</div>
         <div class="stats">
           <div class="stat"><div class="n" id="stTrips">0</div><div class="l">함께한 여행</div></div>
-          <div class="stat"><div class="n" id="stPlaces">0</div><div class="l">다녀온 시·군·구</div></div>
+          <div class="stat"><div class="n" id="stPlaces">0</div><div class="l" id="stPlacesL">다녀온 시·군·구</div></div>
           <div class="stat"><div class="n" id="stPhotos">0</div><div class="l">남긴 사진</div></div>
           <div class="stat"><div class="n" id="stNights">0</div><div class="l">함께 보낸 밤</div></div>
         </div>
@@ -379,7 +395,7 @@ footer small{display:block;font-family:var(--f-body);font-size:12px;margin-top:4
 
   <section id="map">
     <div class="sec-head">
-      <div><div class="eyebrow">우리가 다녀온 곳</div><h2>여행지도</h2><p>시·도를 누르면 확대되고, 시·군·구를 누르면 그곳 사진이 열려요.</p></div>
+      <div><div class="eyebrow">우리가 다녀온 곳</div><h2>여행지도</h2><p id="mapDesc">시·도를 누르면 확대되고, 시·군·구를 누르면 그곳 사진이 열려요.</p></div>
     </div>
     <div class="map-grid">
       <div>
@@ -447,7 +463,8 @@ footer small{display:block;font-family:var(--f-body);font-size:12px;margin-top:4
   <div class="row2">
     <div class="field"><label for="tProv">시·도</label><select id="tProv"></select></div>
     <div class="field" id="tMuniWrap"><label for="tMuni">시·군·구</label><select id="tMuni"></select></div>
-    <div class="field" id="tAbroadWrap" hidden><label for="tAbroad">나라·도시</label><input id="tAbroad" maxlength="30" placeholder="예: 일본 교토"></div>
+    <div class="field" id="tCountryWrap" hidden><label for="tCountry">나라</label><select id="tCountry"></select></div>
+    <div class="field" id="tAbroadWrap" hidden><label for="tAbroad">도시·장소 (선택)</label><input id="tAbroad" maxlength="30" placeholder="예: 교토"></div>
   </div>
   <div class="field" id="tSpotWrap"><label for="tSpot">자세한 장소 (선택)</label><input id="tSpot" maxlength="30" placeholder="예: 경포대, 안목해변"></div>
   <div class="row2">
@@ -518,14 +535,29 @@ footer small{display:block;font-family:var(--f-body);font-size:12px;margin-top:4
 <script src="config.js"></script>
 <script src="backend.js"></script>
 <script src="korea-geo.js"></script>
+<script src="world-geo.js"></script>
 <script>
 (() => {
 // ---------- 상태 ----------
-const GEO = window.KOREA_GEO || null;
-const PROV = new Map((GEO?.prov||[]).map(p=>[p.c,p]));
-const MUNI = new Map((GEO?.muni||[]).map(m=>[m.c,m]));
-const state = { couple:{}, collage:{}, trips:[], photos:[], filter:"all", db:null, assets:null, canWrite:true, lbList:[], lbIdx:0,
+// 한국 지도(주소 이름 찾기용, 항상 한국)와 세계 지도(나라 이름)
+const KGEO = window.KOREA_GEO || null, WGEO = window.WORLD_GEO || null;
+const KPROV = new Map((KGEO?.prov||[]).map(p=>[p.c,p]));
+const KMUNI = new Map((KGEO?.muni||[]).map(m=>[m.c,m]));
+const COUNTRY = new Map((WGEO?.prov||[]).map(p=>[p.c,p]));
+// 지금 화면에 그리는 지도: 국내 탭이면 한국(시·도 › 시·군·구), 해외 탭이면 세계(나라)
+let GEO=KGEO, PROV=KPROV, MUNI=KMUNI;
+// trips·photos 는 지금 탭(국내/해외)에 해당하는 것만, allTrips·allPhotos 는 전체
+let scope="kr"; try{ if(localStorage.getItem("albumScope")==="world") scope="world"; }catch(_){}
+const state = { couple:{}, collage:{}, trips:[], photos:[], allTrips:[], allPhotos:[], filter:"all", db:null, assets:null, canWrite:true, lbList:[], lbIdx:0,
   focus:null, region:null, stats:null };
+const isWorld = () => scope==="world";
+function useMap(){ if(isWorld()&&WGEO){ GEO=WGEO; PROV=COUNTRY; MUNI=new Map(); } else { GEO=KGEO; PROV=KPROV; MUNI=KMUNI; } }
+function applyScopeData(){
+  state.trips = state.allTrips.filter(t=>isWorld() ? !!t.abroad : !t.abroad);
+  const ids=new Set(state.trips.map(t=>t.id));
+  state.photos = state.allPhotos.filter(p=>ids.has(p.trip));
+}
+useMap();
 const $ = id => document.getElementById(id);
 const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const dataOf = s => typeof s.data==="function" ? s.data() : s.data;
@@ -547,9 +579,15 @@ function tripRange(t){
   const end = t.end && t.end!==t.start ? " – "+(t.end.slice(0,4)===t.start.slice(0,4)? fmt(t.end.slice(5)) : fmt(t.end)) : "";
   return fmt(t.start)+end+" · "+(n? `${n}박 ${n+1}일` : "당일");
 }
+// 해외 여행 장소: "일본 교토" (도시 칸에 이미 나라 이름이 들어 있으면 한 번만)
+function abroadPlace(t){
+  const c=COUNTRY.get(t.country)?.n||"", city=(t.abroadName||"").trim();
+  if(!c) return city||"해외";
+  return !city || city.startsWith(c) ? (city||c) : `${c} ${city}`;
+}
 function placeLabel(t){
-  if(t.abroad) return t.abroadName||"해외";
-  const p=PROV.get(t.prov), m=MUNI.get(t.muni);
+  if(t.abroad) return abroadPlace(t);
+  const p=KPROV.get(t.prov), m=KMUNI.get(t.muni);
   return [p?.n, m?.n].filter(Boolean).join(" ")+(t.spot?` · ${t.spot}`:"");
 }
 function toast(msg){ const t=$("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>t.hidden=true,2600); }
@@ -561,8 +599,10 @@ function computeStats(){
   const muni={}, prov={};
   const bump=(o,k,f,n)=>{ (o[k] ||= {photos:0,trips:0})[f]+=n; };
   for(const t of state.trips){
-    if(t.abroad||!t.muni) continue;
     const n=photoCount(t.id);
+    // 해외 탭: 나라별로만 세요 (지도에서 나라 = 시·도 자리)
+    if(isWorld()){ if(t.country){ bump(prov,t.country,"trips",1); bump(prov,t.country,"photos",n); } continue; }
+    if(t.abroad||!t.muni) continue;
     bump(muni,t.muni,"trips",1); bump(muni,t.muni,"photos",n);
     bump(prov,t.prov,"trips",1); bump(prov,t.prov,"photos",n);
   }
@@ -576,13 +616,15 @@ const COARSE = matchMedia("(pointer: coarse)").matches;
 const provEls=new Map(), muniEls=new Map();
 function initMap(){
   const box=$("mapBox");
-  if(!GEO){ box.innerHTML=`<div class="mini-empty" style="margin:16px">지도 데이터를 불러오지 못했어요. 새로고침해 주세요.</div>`; return; }
+  box.classList.toggle("world", isWorld());
+  provEls.clear(); muniEls.clear(); cancelAnimationFrame(anim); animTarget=null;
+  if(!GEO){ svg=null; box.innerHTML=`<div class="mini-empty" style="margin:16px">지도 데이터를 불러오지 못했어요. 새로고침해 주세요.</div>`; return; }
   const [x0,y0,x1,y1]=GEO.box, pad=8;
   nationVB=[x0-pad,y0-pad,x1-x0+pad*2,y1-y0+pad*2]; vb=[...nationVB];
   const ul=[...MUNI.values()].find(m=>m.n==="울릉군");
   const inset = ul ? `<rect class="inset" x="${ul.b[0]-6}" y="${ul.b[1]-6}" width="${ul.b[2]-ul.b[0]+12}" height="${ul.b[3]-ul.b[1]+12}" rx="3"/>` : "";
-  box.innerHTML=`<svg id="mapSvg" viewBox="${vb.join(" ")}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="대한민국 여행 지도">
-    <g class="geo" id="gProv">${GEO.prov.map(p=>`<path data-prov="${p.c}" d="${p.d}"><title>${esc(p.f)}</title></path>`).join("")}</g>
+  box.innerHTML=`<svg id="mapSvg" viewBox="${vb.join(" ")}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${isWorld()?"세계 여행 지도":"대한민국 여행 지도"}">
+    <g class="geo" id="gProv">${GEO.prov.map(p=>`<path data-prov="${p.c}"${p.dot?' class="dot"':""}${isWorld()&&p.c==="KOR"?' data-home="1"':""} d="${p.d}"><title>${esc(p.f)}</title></path>`).join("")}</g>
     <g class="geo" id="gMuni">${GEO.muni.map(m=>`<path class="off" data-muni="${m.c}" data-p="${m.p}" d="${m.d}"><title>${esc(m.n)}</title></path>`).join("")}</g>
     ${inset}<g id="gLbl"></g></svg>
     <div class="map-ctrl">
@@ -590,6 +632,8 @@ function initMap(){
     </div>
     <span class="map-hint">${COARSE ? "꾹 누른 채 움직이면 이동 · 두 손가락으로 확대" : "휠로 확대·축소 · 드래그로 이동 · 오른쪽 클릭으로 뒤로"}</span>`;
   svg=$("mapSvg");
+  // 사용법 안내는 지도를 가리지 않게 잠시 뒤 사라져요
+  const hint=box.querySelector(".map-hint"); setTimeout(()=>hint?.classList.add("gone"), 5000);
   svg.querySelectorAll("[data-prov]").forEach(el=>provEls.set(el.dataset.prov,el));
   svg.querySelectorAll("[data-muni]").forEach(el=>muniEls.set(el.dataset.muni,el));
   bindMapGestures(box);
@@ -597,6 +641,7 @@ function initMap(){
     if(suppressClick){ suppressClick=false; return; }
     const el=e.target.closest("path"); if(!el) return;
     if(el.dataset.muni) selectRegion(el.dataset.muni);
+    else if(el.dataset.home) setScope("kr");   // 세계 지도에서 대한민국을 누르면 국내 탭으로
     else if(el.dataset.prov && !el.classList.contains("base")) focusProv(el.dataset.prov);
   });
 }
@@ -619,7 +664,10 @@ function animateTo(target){
   anim=requestAnimationFrame(step);
 }
 function provVB(code){
-  const [x0,y0,x1,y1]=PROV.get(code).b; const w=x1-x0, h=y1-y0, p=Math.max(w,h)*.08;
+  const [x0,y0,x1,y1]=PROV.get(code).b; let w=x1-x0, h=y1-y0;
+  // 아주 작은 나라(싱가포르·몰디브 등)는 주변이 보이게 최소 크기를 둬요
+  if(isWorld()){ const min=60, cx=(x0+x1)/2, cy=(y0+y1)/2; w=Math.max(w,min); h=Math.max(h,min*.6); const p=Math.max(w,h)*.12; return [cx-w/2-p, cy-h/2-p, w+p*2, h+p*2]; }
+  const p=Math.max(w,h)*.08;
   return [x0-p,y0-p,w+p*2,h+p*2];
 }
 function paintMap(){
@@ -628,30 +676,43 @@ function paintMap(){
   for(const [c,el] of provEls){
     el.dataset.lv=level(prov[c]);
     el.classList.toggle("dim", !!state.focus && c!==state.focus);
-    el.classList.toggle("base", c===state.focus);
+    el.classList.toggle("base", !isWorld() && c===state.focus);
+    el.classList.toggle("sel", isWorld() && c===state.focus);
   }
+  if(isWorld() && state.focus){ const s=provEls.get(state.focus); s?.parentNode.appendChild(s); }
   for(const [c,el] of muniEls){
     el.dataset.lv=level(muni[c]);
     el.classList.toggle("off", !state.focus || el.dataset.p!==state.focus);
     el.classList.toggle("sel", c===state.region);
   }
   const sel=state.region && muniEls.get(state.region); if(sel) sel.parentNode.appendChild(sel);
-  // 라벨
-  const target = state.focus ? provVB(state.focus) : nationVB;
-  const items = state.focus ? GEO.muni.filter(m=>m.p===state.focus) : GEO.prov;
-  const st = state.focus ? muni : prov;
+  // 라벨 (세계 지도는 나라가 많아서 다녀온 나라와 고른 나라만 이름을 써요)
+  const W=isWorld();
+  const items = state.focus&&!W ? GEO.muni.filter(m=>m.p===state.focus) : W ? GEO.prov.filter(c=>prov[c.c]?.trips||c.c===state.focus) : GEO.prov;
+  const st = state.focus&&!W ? muni : prov;
   const small = new Set(["11","21","22","23","24","25","26","29"]);
-  const base = state.focus ? .028 : .026;
+  const base = W ? (state.focus ? .03 : .018) : state.focus ? .028 : .026;
   $("gLbl").innerHTML = items.map(it=>{
-    const k = !state.focus && small.has(it.c) ? base*.78 : base;
+    const k = !W && !state.focus && small.has(it.c) ? base*.78 : base;
     const lv = level(st[it.c]);
     return `<text class="lbl${lv==="3"||lv==="4"?" on-dark":""}" x="${it.l[0]}" y="${it.l[1]}" data-k="${k}">${esc(it.n)}</text>`;
   }).join("");
   sizeLabels();
+  const p=state.focus&&PROV.get(state.focus), m=state.region&&MUNI.get(state.region);
+  if(W){
+    const visited=GEO.prov.filter(c=>prov[c.c]?.trips);
+    $("mapCount").textContent=`${visited.length}개 나라 다녀옴`;
+    $("crumb").innerHTML = !p ? "<b>전 세계</b>" : `전 세계 › <b>${esc(p.f)}</b>`;
+    $("mapBack").hidden=!state.focus;
+    // 나라 칩: 다녀온 나라만 (사진 많은 순)
+    $("provChips").innerHTML = visited.sort((a,b)=>(prov[b.c].photos-prov[a.c].photos)||a.n.localeCompare(b.n,"ko")).map(c=>
+      `<button type="button" class="pchip has${state.focus===c.c?" on":""}" data-focus="${c.c}">${esc(c.n)}${prov[c.c].photos?`<span class="k">${prov[c.c].photos}</span>`:""}</button>`).join("")
+      || `<span class="note">해외 여행을 추가하면 다녀온 나라가 여기에 모여요.</span>`;
+    return;
+  }
   const colored=Object.values(muni).filter(s=>s.trips).length;
   $("mapCount").textContent=`전국 ${GEO.muni.length}곳 중 ${colored}곳 색칠`;
   // 크럼·뒤로
-  const p=state.focus&&PROV.get(state.focus), m=state.region&&MUNI.get(state.region);
   $("crumb").innerHTML = !p ? "<b>전국</b>" : `전국 › ${m?esc(p.f)+" › <b>"+esc(m.n)+"</b>":"<b>"+esc(p.f)+"</b>"}`;
   $("mapBack").hidden=!state.focus;
   // 시도 칩
@@ -788,6 +849,21 @@ function renderSide(){
   const solo=!state.region&&!state.focus;
   side.hidden=solo; side.parentElement.classList.toggle("solo",solo);
   if(solo){ side.innerHTML=""; return; }
+  // 해외 탭: 나라를 고르면 그 나라 여행과 사진
+  if(isWorld()){
+    const c=COUNTRY.get(state.focus);
+    const ts=sortedTrips(state.trips.filter(t=>t.country===c.c));
+    const ids=new Set(ts.map(t=>t.id));
+    const ps=state.photos.filter(x=>ids.has(x.trip)).sort((a,b)=>(b.at||0)-(a.at||0));
+    side._list=ps;
+    side.innerHTML=`<div class="side-head"><div><div class="eyebrow">나라</div><h3>${esc(c.n)}</h3>
+      <div class="sub">여행 ${ts.length}번 · 사진 ${ps.length}장</div></div>
+      <div class="side-actions">${add?`<button class="btn sm" type="button" data-add-country="${c.c}">이 나라 여행 추가</button>`:""}${ps.length&&state.assets?`<button class="btn sm" type="button" data-upload-trip="${esc(ts[0].id)}">사진 올리기</button>`:""}</div></div>
+      ${ts.length? `<div class="trips">${ts.map(tripRow).join("")}</div>` : `<div class="mini-empty">아직 ${esc(c.n)} 여행 기록이 없어요.${add?`<br><button class="btn primary sm" type="button" data-add-country="${c.c}">${esc(c.n)} 여행 추가</button>`:""}</div>`}
+      ${ps.length? `<div class="thumbs">${ps.map((x,i)=>`<button type="button" data-thumb="${i}" aria-label="사진 크게 보기"><img src="${blob(x.asset)}" alt="${esc(x.caption||"")}" loading="lazy"></button>`).join("")}</div>`
+        : ts.length? `<div class="mini-empty" style="margin-top:14px">이 나라 사진을 올리면 지도에 색이 칠해져요.${state.assets?`<br><button class="btn primary sm" type="button" data-upload-trip="${esc(ts[0].id)}">사진 올리기</button>`:""}</div>` : ""}`;
+    return;
+  }
   if(state.region){
     const m=MUNI.get(state.region), p=PROV.get(m.p);
     const ts=sortedTrips(state.trips.filter(t=>!t.abroad&&t.muni===m.c));
@@ -827,7 +903,10 @@ function renderHome(){
   $("dday").innerHTML = s ? `함께한 지 <strong>D+${(Math.round((today()-s)/864e5)+1).toLocaleString()}</strong><span class="hand">since ${fmt(since)}</span>` : "처음 만난 날을 입력하면 함께한 날짜가 표시돼요.";
   const past = state.trips.filter(t=>parseD(t.start)<=today());
   $("stTrips").textContent=past.length;
-  $("stPlaces").textContent=new Set(past.filter(t=>!t.abroad&&t.muni).map(t=>t.muni)).size;
+  // 국내: 다녀온 시·군·구 수, 해외: 다녀온 나라 수
+  $("stPlaces").textContent = isWorld() ? new Set(past.filter(t=>t.country).map(t=>t.country)).size
+    : new Set(past.filter(t=>!t.abroad&&t.muni).map(t=>t.muni)).size;
+  $("stPlacesL").textContent = isWorld() ? "다녀온 나라" : "다녀온 시·군·구";
   $("stPhotos").textContent=state.photos.length;
   $("stNights").textContent=past.reduce((s,t)=>s+nights(t),0);
   const up = state.trips.filter(t=>parseD(t.start)>today()).sort((x,y)=>x.start.localeCompare(y.start))[0];
@@ -857,7 +936,7 @@ function capFor(asset, i){
   const c=Object.values(state.collage).find(x=>x?.asset===asset);
   if(c && c.caption) return c.caption;
   const p=state.photos.find(x=>x.asset===asset), t=p&&state.trips.find(z=>z.id===p.trip);
-  if(p) return p.caption || (t ? (t.abroad ? t.abroadName : MUNI.get(t.muni)?.n || t.title) : "");
+  if(p) return p.caption || (t ? (t.abroad ? abroadPlace(t) : KMUNI.get(t.muni)?.n || t.title) : "");
   return COLLAGE_CAP[i];
 }
 // 자동 넘기기 중 글씨: "2026.10.01 · 강릉시"처럼 날짜와 장소.
@@ -868,7 +947,7 @@ function slideCap(asset, i){
   const ymd=n=>{ const d=new Date(n); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
   const shot=p.at ? ymd(p.at) : "";
   const day = shot && t.start && shot>=t.start && shot<=(t.end||t.start) ? shot : t.start;
-  const place = t.abroad ? (t.abroadName||"해외") : (MUNI.get(t.muni)?.n || PROV.get(t.prov)?.n || "");
+  const place = t.abroad ? abroadPlace(t) : (KMUNI.get(t.muni)?.n || KPROV.get(t.prov)?.n || "");
   return [fmt(day), place].filter(Boolean).join(" · ") || capFor(asset, i);
 }
 // 한 자리의 사진을 바꿔요. 같은 사진이면 그대로 두고, fx가 있으면 전환 효과를 줘요
@@ -1027,14 +1106,32 @@ function syncControls(){
   ["heroAddTrip","heroSettings"].forEach(id=>$(id).hidden=!state.db||!state.canWrite);
 }
 function showTrip(id){ state.filter=id; renderSide(); renderAlbum(); $("album").scrollIntoView(); }
+// 맨 위 국내/해외 탭: 지도·통계·사진첩·첫 화면 사진이 모두 그 탭 기준으로 바뀌어요
+function syncScopeTabs(){
+  $("tabKr").setAttribute("aria-selected", String(!isWorld()));
+  $("tabWorld").setAttribute("aria-selected", String(isWorld()));
+  document.body.classList.toggle("world", isWorld());
+  $("mapDesc").textContent = isWorld() ? "나라를 누르면 그 나라 여행과 사진이 열려요. 대한민국을 누르면 국내 탭으로 가요."
+    : "시·도를 누르면 확대되고, 시·군·구를 누르면 그곳 사진이 열려요.";
+}
+async function setScope(s){
+  if(s===scope) return;
+  scope=s; try{ localStorage.setItem("albumScope", s); }catch(_){}
+  state.focus=null; state.region=null; state.filter="all";
+  slide.cur=[null,null,null];
+  useMap(); applyScopeData(); syncScopeTabs(); initMap();
+  await signMissing(); renderAll();
+}
 
 // ---------- 이벤트 위임 ----------
 document.addEventListener("click", e=>{
-  const el=e.target.closest("[data-trip],[data-filter],[data-add-trip],[data-add-here],[data-upload],[data-upload-trip],[data-edit-trip],[data-del-trip],[data-close],[data-focus],[data-region],[data-thumb],[data-zoom],.ph");
+  const el=e.target.closest("[data-trip],[data-filter],[data-add-trip],[data-add-here],[data-add-country],[data-scope],[data-upload],[data-upload-trip],[data-edit-trip],[data-del-trip],[data-close],[data-focus],[data-region],[data-thumb],[data-zoom],.ph");
   if(!el) return;
   if(el.matches("[data-close]")) return el.closest("dialog").close();
   if(el.matches("[data-add-trip]")) return openTrip();
-  if(el.matches("[data-add-here]")){ const m=MUNI.get(el.dataset.addHere); return openTrip(null,{prov:m.p,muni:m.c}); }
+  if(el.matches("[data-add-here]")){ const m=KMUNI.get(el.dataset.addHere); return openTrip(null,{prov:m.p,muni:m.c}); }
+  if(el.matches("[data-add-country]")) return openTrip(null,{abroad:true,country:el.dataset.addCountry});
+  if(el.matches("[data-scope]")) return setScope(el.dataset.scope);
   if(el.matches("[data-upload]")) return openUpload();
   if(el.matches("[data-upload-trip]")) return openUpload(el.dataset.uploadTrip);
   if(el.matches("[data-edit-trip]")) return openTrip(el.dataset.editTrip);
@@ -1063,12 +1160,17 @@ $("formCouple").addEventListener("submit", async e=>{
 // ---------- 여행 추가/수정 ----------
 let editing=null;
 function fillMuni(prov, sel){
-  const ms=(GEO?.muni||[]).filter(m=>m.p===prov).sort((a,b)=>a.n.localeCompare(b.n,"ko"));
+  const ms=(KGEO?.muni||[]).filter(m=>m.p===prov).sort((a,b)=>a.n.localeCompare(b.n,"ko"));
   $("tMuni").innerHTML=`<option value="">선택해 주세요</option>`+ms.map(m=>`<option value="${m.c}"${m.c===sel?" selected":""}>${esc(m.n)}</option>`).join("");
+}
+// 나라 목록 (가나다순, 대한민국 제외)
+function fillCountry(sel){
+  const cs=[...COUNTRY.values()].filter(c=>c.c!=="KOR").sort((a,b)=>a.n.localeCompare(b.n,"ko"));
+  $("tCountry").innerHTML=`<option value="">나라를 골라 주세요</option>`+cs.map(c=>`<option value="${c.c}"${c.c===sel?" selected":""}>${esc(c.n)}</option>`).join("");
 }
 function syncPlaceUI(){
   const ab=$("tProv").value==="abroad";
-  $("tMuniWrap").hidden=ab; $("tAbroadWrap").hidden=!ab; $("tSpotWrap").hidden=ab;
+  $("tMuniWrap").hidden=ab; $("tCountryWrap").hidden=!ab; $("tAbroadWrap").hidden=!ab; $("tSpotWrap").hidden=ab;
 }
 $("tProv").addEventListener("change", ()=>{ if($("tProv").value!=="abroad") fillMuni($("tProv").value); syncPlaceUI(); });
 function openTrip(id, pre){
@@ -1077,10 +1179,13 @@ function openTrip(id, pre){
   $("tripDlgTitle").textContent = editing ? "여행 정보 수정" : "여행 추가";
   $("tTitle").value=t.title||""; $("tStart").value=t.start||""; $("tEnd").value=t.end||""; $("tNote").value=t.note||"";
   $("tSpot").value=t.spot||""; $("tAbroad").value=t.abroadName||"";
-  const prov = t.abroad ? "abroad" : (t.prov || state.focus || "32");
-  $("tProv").innerHTML = (GEO?.prov||[]).slice().sort((a,b)=>a.c.localeCompare(b.c)).map(p=>`<option value="${p.c}"${p.c===prov?" selected":""}>${esc(p.f)}</option>`).join("")
+  // 해외 탭에서 새 여행을 만들면 처음부터 해외로
+  const abroadNew = !editing && !pre && isWorld();
+  const prov = t.abroad||abroadNew ? "abroad" : (t.prov || (!isWorld() && state.focus) || "32");
+  $("tProv").innerHTML = (KGEO?.prov||[]).slice().sort((a,b)=>a.c.localeCompare(b.c)).map(p=>`<option value="${p.c}"${p.c===prov?" selected":""}>${esc(p.f)}</option>`).join("")
     + `<option value="abroad"${prov==="abroad"?" selected":""}>해외</option>`;
-  if(prov!=="abroad") fillMuni(prov, t.muni || (state.region && MUNI.get(state.region)?.p===prov ? state.region : ""));
+  if(prov!=="abroad") fillMuni(prov, t.muni || (state.region && KMUNI.get(state.region)?.p===prov ? state.region : ""));
+  fillCountry(t.country || (isWorld() ? state.focus : "") || "");
   $("tripErr").hidden=true; $("tripConfirm").hidden=true; $("tripDelete").hidden=!editing;
   $("tFiles").value=""; $("tPrev").innerHTML=""; $("tProg").hidden=true; $("tProg").firstElementChild.style.width="0"; $("tMsg").hidden=true;
   $("tFiles").parentElement.hidden=!state.assets;
@@ -1097,8 +1202,8 @@ $("formTrip").addEventListener("submit", async e=>{
   const pv=$("tProv").value, abroad=pv==="abroad";
   let data;
   if(abroad){
-    const name=$("tAbroad").value.trim(); if(!name) return err("나라나 도시 이름을 적어 주세요.");
-    data={abroad:true, abroadName:name, prov:null, muni:null, spot:""};
+    const country=$("tCountry").value; if(!country) return err("나라를 골라 주세요.");
+    data={abroad:true, country, abroadName:$("tAbroad").value.trim(), prov:null, muni:null, spot:""};
   } else {
     const mu=$("tMuni").value; if(!mu) return err("시·군·구를 골라 주세요.");
     data={abroad:false, abroadName:"", prov:pv, muni:mu, spot:$("tSpot").value.trim()};
@@ -1106,7 +1211,7 @@ $("formTrip").addEventListener("submit", async e=>{
   const start=$("tStart").value, end=$("tEnd").value||start;
   if(!start) return err("출발일을 골라 주세요.");
   if(end<start) return err("돌아온 날이 출발일보다 빨라요.");
-  const fallback = abroad ? data.abroadName : `${MUNI.get(data.muni).n} 여행`;
+  const fallback = abroad ? `${data.abroadName || COUNTRY.get(data.country)?.n || "해외"} 여행` : `${KMUNI.get(data.muni).n} 여행`;
   Object.assign(data,{title:$("tTitle").value.trim()||fallback, start, end, note:$("tNote").value.trim()});
   const fs=state.assets ? [...$("tFiles").files] : [];
   $("tripSave").disabled=true;
@@ -1288,19 +1393,30 @@ $("lbDel").onclick=()=>{
 };
 
 // ---------- 연결 ----------
+syncScopeTabs();
 initMap();
 renderAll();
 // 2026년 행정구역 개편 전에 저장한 여행도 새 지도에 맞게 읽어요.
 // 인천 중구·동구 → 제물포구, 서구 → 서해구(대부분 지역), 시·도는 시·군·구에서 다시 정해요(광주 → 전남광주, 군위 → 대구)
 const LEGACY_MUNI={"23010":"23090","23020":"23090","23080":"23120"};
+// 나라 칸이 생기기 전에 만든 해외 여행("일본 교토"처럼 글로만 적은 것)은 글에서 나라 이름을 찾아 연결해요
+const COUNTRY_BY_NAME=[...COUNTRY.values()].filter(c=>c.c!=="KOR").sort((a,b)=>b.n.length-a.n.length);
+const COUNTRY_ALIAS={"미국":"USA","영국":"GBR","대만":"TWN","홍콩":"HKG","마카오":"MAC","괌":"GUM","사이판":"MNP","하와이":"USA","발리":"IDN","다낭":"VNM","방콕":"THA","도쿄":"JPN","오사카":"JPN","후쿠오카":"JPN","파리":"FRA","런던":"GBR","뉴욕":"USA"};
+function guessCountry(text){
+  if(!text) return "";
+  const hit=COUNTRY_BY_NAME.find(c=>text.includes(c.n)); if(hit) return hit.c;
+  for(const [k,v] of Object.entries(COUNTRY_ALIAS)) if(text.includes(k)) return v;
+  return "";
+}
 function fixRegion(t){
-  if(t.abroad||!t.muni) return t;
-  const muni=LEGACY_MUNI[t.muni]||t.muni, m=MUNI.get(muni);
+  if(t.abroad) return t.country ? t : {...t, country:guessCountry(t.abroadName)};
+  if(!t.muni) return t;
+  const muni=LEGACY_MUNI[t.muni]||t.muni, m=KMUNI.get(muni);
   return m ? {...t, muni, prov:m.p} : t;
 }
-// 아직 서명 주소가 없는 사진·대표 사진 주소를 받아 와요
+// 아직 서명 주소가 없는 사진·대표 사진 주소를 받아 와요 (국내·해외 모두 미리 받아서 탭을 바꿔도 바로 보여요)
 async function signMissing(){
-  const ids=[...new Set([...state.photos.map(p=>p.asset), ...state.trips.map(t=>t.cover), ...Object.values(state.collage).map(c=>c?.asset)].filter(id=>id&&!urls.has(id)))];
+  const ids=[...new Set([...state.allPhotos.map(p=>p.asset), ...state.allTrips.map(t=>t.cover), ...Object.values(state.collage).map(c=>c?.asset)].filter(id=>id&&!urls.has(id)))];
   if(!ids.length) return;
   try{ for(const [k,v] of await state.assets.sign(ids)) urls.set(k,v); }catch(_){}
 }
@@ -1357,8 +1473,8 @@ function askLogin(be){
   be.startRealtime();
   db.doc("meta/couple").onSnapshot(s=>{ state.couple = s.exists ? (dataOf(s)||{}) : {}; renderHome(); }, ()=>{});
   db.doc("meta/collage").onSnapshot(async s=>{ state.collage = s.exists ? (dataOf(s)||{}) : {}; await signMissing(); applyShow(); renderHome(); }, ()=>{});
-  db.collection("trips").onSnapshot(async s=>{ state.trips=s.docs.map(d=>fixRegion({id:d.id,...dataOf(d)})); await signMissing(); renderAll(); },()=>banner("여행 목록을 불러오지 못했어요. 새로고침해 주세요."));
-  db.collection("photos").onSnapshot(async s=>{ state.photos=s.docs.map(d=>({id:d.id,...dataOf(d)})); await signMissing(); renderAll(); }, ()=>banner("사진을 불러오지 못했어요. 새로고침해 주세요."));
+  db.collection("trips").onSnapshot(async s=>{ state.allTrips=s.docs.map(d=>fixRegion({id:d.id,...dataOf(d)})); applyScopeData(); await signMissing(); renderAll(); },()=>banner("여행 목록을 불러오지 못했어요. 새로고침해 주세요."));
+  db.collection("photos").onSnapshot(async s=>{ state.allPhotos=s.docs.map(d=>({id:d.id,...dataOf(d)})); applyScopeData(); await signMissing(); renderAll(); }, ()=>banner("사진을 불러오지 못했어요. 새로고침해 주세요."));
 })();
 })();
 </script>
