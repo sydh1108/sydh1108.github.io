@@ -425,6 +425,7 @@ footer small{display:block;font-family:var(--f-body);font-size:12px;margin-top:4
 <!-- 사진 크게 보기 -->
 <dialog id="lb"><div class="lb">
   <div class="lb-top"><span class="sp" id="lbMeta"></span>
+    <button class="btn" type="button" id="lbSave">저장</button>
     <button class="btn" type="button" id="lbCover">대표 사진으로</button>
     <button class="btn danger" type="button" id="lbDel">삭제</button>
     <button class="btn" type="button" id="lbClose">닫기</button></div>
@@ -1012,6 +1013,21 @@ function drawLb(){
   $("lbConfirm").innerHTML=""; $("lbPrev").hidden=state.lbIdx<=0; $("lbNext").hidden=state.lbIdx>=state.lbList.length-1;
 }
 $("lbClose").onclick=()=>$("lb").close();
+// 사진 저장: 휴대폰은 공유 시트(→ "이미지 저장"), 컴퓨터는 파일로 내려받아요
+$("lbSave").onclick=async()=>{
+  const p=state.lbList[state.lbIdx]; if(!p) return;
+  const t=state.trips.find(z=>z.id===p.trip);
+  try{
+    const b=await (await fetch(blob(p.asset))).blob();
+    const ext=(b.type.split("/")[1]||"jpg").replace("jpeg","jpg");
+    const name=`${(t?.title||"여행").replace(/[\\/:*?"<>|]/g,"").trim()||"여행"}_${state.lbIdx+1}.${ext}`;
+    const f=new File([b],name,{type:b.type||"image/jpeg"});
+    if(COARSE && navigator.canShare?.({files:[f]})){ await navigator.share({files:[f]}); return; }
+    const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=name;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    toast("사진을 저장했어요");
+  }catch(x){ if(x?.name!=="AbortError") toast("저장하지 못했어요"); }
+};
 $("lbPrev").onclick=()=>{ if(state.lbIdx>0){state.lbIdx--;drawLb();} };
 $("lbNext").onclick=()=>{ if(state.lbIdx<state.lbList.length-1){state.lbIdx++;drawLb();} };
 $("lb").addEventListener("keydown", e=>{ if(e.target.tagName==="INPUT") return; if(e.key==="ArrowLeft") $("lbPrev").click(); if(e.key==="ArrowRight") $("lbNext").click(); });
