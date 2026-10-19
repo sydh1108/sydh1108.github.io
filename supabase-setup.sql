@@ -27,6 +27,8 @@ create table if not exists public.docs (
   primary key (collection, id)
 );
 alter table public.docs enable row level security;
+grant select, insert, update, delete on public.docs to authenticated;
+grant execute on function public.is_member() to authenticated;
 
 drop policy if exists "members read docs" on public.docs;
 drop policy if exists "members insert docs" on public.docs;
