@@ -187,7 +187,7 @@ body.world .map-box{aspect-ratio:2.25/1}
 .crumb b{color:var(--fg)}
 .map-box{position:relative;border-radius:var(--r);overflow:hidden;aspect-ratio:4/5;max-width:100%;box-shadow:var(--shadow);
   background:var(--sea) radial-gradient(color-mix(in srgb,var(--accent) 16%,transparent) 1px,transparent 1.4px) 0 0/16px 16px}
-.map-box svg{display:block;width:100%;height:100%;touch-action:pan-x pan-y;cursor:grab;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.map-box svg{display:block;width:100%;height:100%;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .geo path{fill:var(--land);fill-rule:evenodd;stroke:var(--geo-stroke);stroke-width:1;vector-effect:non-scaling-stroke;stroke-linejoin:round;cursor:pointer;transition:fill .35s,opacity .35s}
 .geo path:hover{fill:var(--land-hover)}
 .geo path[data-lv="v"]{fill:var(--m-v)}
@@ -239,17 +239,6 @@ body.world .map-box{aspect-ratio:2.25/1}
 .ic:hover{color:var(--accent);border-color:var(--accent)}
 .ic.del:hover{color:var(--coral);border-color:var(--coral);background:var(--coral-soft)}
 .del-ok{background:var(--coral)!important;border-color:var(--coral)!important;color:#fff!important;box-shadow:none!important}
-/* 지도 확대·이동 */
-.map-ctrl{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;gap:6px;z-index:2}
-.map-ctrl button{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font-size:20px;line-height:1;
-  display:grid;place-items:center;box-shadow:var(--shadow);padding:0}
-.map-ctrl button:hover{border-color:var(--accent);color:var(--accent)}
-.map-ctrl svg{width:18px;height:18px}
-.map-hint{position:absolute;left:10px;top:10px;max-width:calc(100% - 70px);font-size:12px;color:var(--muted);background:color-mix(in srgb,var(--surface) 85%,transparent);
-  padding:3px 9px;border-radius:999px;pointer-events:none;z-index:2;transition:opacity .6s}
-.map-hint.gone{opacity:0}
-.map-box.grabbing svg,.map-box.grabbing svg *{cursor:grabbing}
-.map-box.holding{box-shadow:0 0 0 3px var(--accent),var(--shadow)}
 .tag{font-size:11px;border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:2px;background:var(--accent-soft);color:var(--accent)}
 .tag.soon{background:var(--coral-soft);color:var(--coral)}
 .mlist{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 18px}
@@ -609,7 +598,7 @@ function computeStats(){
 const level = s => !s ? "" : s.photos>=30?"4" : s.photos>=10?"3" : s.photos>=3?"2" : s.photos>=1?"1" : s.trips?"v":"";
 
 // ---------- 지도 ----------
-let svg=null, vb=null, nationVB=null, anim=0, animTarget=null, suppressClick=false;
+let svg=null, vb=null, nationVB=null, anim=0, animTarget=null;
 const COARSE = matchMedia("(pointer: coarse)").matches;
 const provEls=new Map(), muniEls=new Map();
 function initMap(){
@@ -627,19 +616,14 @@ function initMap(){
   box.innerHTML=`<svg id="mapSvg" viewBox="${vb.join(" ")}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${isWorld()?"세계 여행 지도":"대한민국 여행 지도"}">
     <g class="geo" id="gProv">${GEO.prov.map(p=>`<path data-prov="${p.c}"${p.dot?' class="dot"':""}${isWorld()&&p.c==="KOR"?' data-home="1"':""} d="${p.d}"><title>${esc(p.f)}</title></path>`).join("")}</g>
     <g class="geo" id="gMuni">${GEO.muni.map(m=>`<path class="off" data-muni="${m.c}" data-p="${m.p}" d="${m.d}"><title>${esc(m.n)}</title></path>`).join("")}</g>
-    ${inset}${dokdo}<g id="gLbl"></g></svg>
-    <div class="map-ctrl">
-      <button type="button" data-zoom="reset" aria-label="처음 보기로" title="처음 보기로"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
-    </div>
-    <span class="map-hint">${COARSE ? "꾹 누른 채 움직이면 이동 · 두 손가락으로 확대" : "휠로 확대·축소 · 드래그로 이동 · 오른쪽 클릭으로 뒤로"}</span>`;
+    ${inset}${dokdo}<g id="gLbl"></g></svg>`;
+  // 지도 상자를 지도 모양에 딱 맞춰요. 끌기·휠 이동은 없고, 지역을 누르면 그 지역이 상자에 맞게 확대돼요
+  box.style.aspectRatio=`${nationVB[2]} / ${nationVB[3]}`;
   svg=$("mapSvg");
-  // 사용법 안내는 지도를 가리지 않게 잠시 뒤 사라져요
-  const hint=box.querySelector(".map-hint"); setTimeout(()=>hint?.classList.add("gone"), 5000);
   svg.querySelectorAll("[data-prov]").forEach(el=>provEls.set(el.dataset.prov,el));
   svg.querySelectorAll("[data-muni]").forEach(el=>muniEls.set(el.dataset.muni,el));
-  bindMapGestures(box);
+  svg.addEventListener("contextmenu", e=>{ if(state.focus){ e.preventDefault(); mapBack(); } });
   svg.addEventListener("click", e=>{
-    if(suppressClick){ suppressClick=false; return; }
     const el=e.target.closest("path"); if(!el) return;
     if(el.dataset.muni) selectRegion(el.dataset.muni);
     else if(el.dataset.home) setScope("kr");   // 세계 지도에서 대한민국을 누르면 국내 탭으로
@@ -672,8 +656,10 @@ function animateTo(target){
   animateTo._t=setTimeout(()=>{ if(animTarget===target){ cancelAnimationFrame(anim); setVB(target); animTarget=null; } }, D+250);
   anim=requestAnimationFrame(step);
 }
-function provVB(code){
-  const [x0,y0,x1,y1]=PROV.get(code).b; let w=x1-x0, h=y1-y0;
+function provVB(code){ return fitVB(PROV.get(code).b); }
+// 범위 [x0,y0,x1,y1]가 지도 상자에 꽉 차게 보이는 viewBox
+function fitVB([x0,y0,x1,y1]){
+  let w=x1-x0, h=y1-y0;
   // 아주 작은 나라(싱가포르·몰디브 등)는 주변이 보이게 최소 크기를 둬요
   if(isWorld()){ const min=60, cx=(x0+x1)/2, cy=(y0+y1)/2; w=Math.max(w,min); h=Math.max(h,min*.6); const p=Math.max(w,h)*.12; return [cx-w/2-p, cy-h/2-p, w+p*2, h+p*2]; }
   const p=Math.max(w,h)*.08;
@@ -736,109 +722,15 @@ function focusProv(code){
 }
 function selectRegion(code){
   const m=MUNI.get(code); if(!m) return;
-  if(state.focus!==m.p){ state.focus=m.p; animateTo(provVB(m.p)); }
-  state.region=code; paintMap(); renderSide();
+  state.focus=m.p; state.region=code; paintMap(); renderSide();
+  animateTo(fitVB(m.b));   // 고른 시·군·구가 지도 상자에 맞게 확대돼요
   if(matchMedia("(max-width:820px)").matches) $("side").scrollIntoView({block:"start"});
 }
 function mapBack(){
-  if(state.region){ state.region=null; paintMap(); renderSide(); return; }
+  if(state.region){ state.region=null; paintMap(); renderSide(); animateTo(provVB(state.focus)); return; }
   state.focus=null; paintMap(); renderSide(); animateTo(nationVB);
 }
 $("mapBack").onclick=mapBack;
-
-// ---------- 지도 확대·축소·이동 ----------
-const homeVB = () => state.focus ? provVB(state.focus) : nationVB;
-function clampVB([x,y,w,h]){
-  const r=h/w, maxW=nationVB[2]*1.15, minW=nationVB[2]/40;
-  if(w>maxW){ w=maxW; h=w*r; } if(w<minW){ w=minW; h=w*r; }
-  const cx=Math.min(Math.max(x+w/2,nationVB[0]),nationVB[0]+nationVB[2]);
-  const cy=Math.min(Math.max(y+h/2,nationVB[1]),nationVB[1]+nationVB[3]);
-  return [cx-w/2,cy-h/2,w,h];
-}
-function toSvg(x,y,inv){ const p=svg.createSVGPoint(); p.x=x; p.y=y; return p.matrixTransform(inv); }
-function zoomed([x,y,w,h],f,cx,cy){ return [cx-(cx-x)/f, cy-(cy-y)/f, w/f, h/f]; }
-function zoomButton(k){
-  if(!svg) return;
-  if(k==="reset") return animateTo(homeVB());
-  const cur=animTarget||vb, [x,y,w,h]=cur, f=k==="in"?1.6:1/1.6;
-  animateTo(clampVB(zoomed(cur,f,x+w/2,y+h/2)));
-}
-function panFrom(d,cx,cy){
-  const a=toSvg(d.x,d.y,d.inv), b=toSvg(cx,cy,d.inv);
-  setVB(clampVB([d.vb[0]-(b.x-a.x), d.vb[1]-(b.y-a.y), d.vb[2], d.vb[3]]));
-}
-function bindMapGestures(box){
-  // 마우스: 누른 채 끌면 이동, 지도 위에서 휠을 굴리면 확대·축소, 오른쪽 클릭은 뒤로
-  let drag=null;
-  svg.addEventListener("pointerdown", e=>{
-    if(e.pointerType!=="mouse"||e.button!==0) return;
-    drag={x:e.clientX,y:e.clientY,vb:[...vb],inv:svg.getScreenCTM().inverse(),moved:false};
-  });
-  addEventListener("pointermove", e=>{
-    if(!drag) return;
-    if(!drag.moved && Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<4) return;
-    if(!drag.moved){ drag.moved=true; cancelAnimationFrame(anim); animTarget=null; box.classList.add("grabbing"); }
-    panFrom(drag,e.clientX,e.clientY);
-  });
-  addEventListener("pointerup", ()=>{ if(!drag) return; if(drag.moved){ suppressClick=true; setTimeout(()=>suppressClick=false,300); } drag=null; box.classList.remove("grabbing"); });
-  svg.addEventListener("wheel", e=>{
-    e.preventDefault(); cancelAnimationFrame(anim); animTarget=null;
-    const p=toSvg(e.clientX,e.clientY,svg.getScreenCTM().inverse());
-    const dy = e.deltaY * (e.deltaMode===1 ? 33 : e.deltaMode===2 ? 400 : 1);
-    setVB(clampVB(zoomed(animTarget||vb,Math.exp(-Math.max(-300,Math.min(300,dy))*.0025),p.x,p.y)));
-  },{passive:false});
-
-  // 터치: 꾹 누르면(0.35초) 한 손가락으로 이동, 두 손가락은 바로 확대·이동. 그냥 쓸면 페이지가 스크롤돼요.
-  let t=null;
-  const mid=(a,b)=>({x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2});
-  const dist=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
-  const endHold=()=>{ box.classList.remove("holding"); };
-  // 터치 길게 누르기도 contextmenu를 일으키므로, 최근 터치가 있었으면 뒤로가기를 하지 않아요
-  let lastTouch=0;
-  svg.addEventListener("touchstart", ()=>lastTouch=Date.now(), {passive:true});
-  svg.addEventListener("contextmenu", e=>{
-    e.preventDefault();
-    if(Date.now()-lastTouch<1500 || drag?.moved) return;
-    if(state.focus) mapBack();
-    else if(vb.some((v,i)=>Math.abs(v-nationVB[i])>.5)) animateTo(nationVB);
-  });
-  svg.addEventListener("touchstart", e=>{
-    clearTimeout(t?.timer);
-    if(e.touches.length===1){
-      const p=e.touches[0];
-      t={mode:"wait",x:p.clientX,y:p.clientY,vb:[...vb],inv:svg.getScreenCTM().inverse(),moved:false};
-      t.timer=setTimeout(()=>{ if(t?.mode==="wait"){ t.mode="pan"; cancelAnimationFrame(anim); animTarget=null; box.classList.add("holding"); try{navigator.vibrate?.(12);}catch(_){} } },350);
-    } else if(e.touches.length===2){
-      e.preventDefault(); cancelAnimationFrame(anim); animTarget=null;
-      const [a,b]=e.touches;
-      t={mode:"pinch",vb:[...vb],inv:svg.getScreenCTM().inverse(),d0:dist(a,b)||1,m0:mid(a,b),moved:true};
-    }
-  },{passive:false});
-  svg.addEventListener("touchmove", e=>{
-    if(!t) return;
-    if(t.mode==="wait"){
-      const p=e.touches[0];
-      if(Math.hypot(p.clientX-t.x,p.clientY-t.y)>8){ clearTimeout(t.timer); t=null; }
-      return;
-    }
-    if(t.mode==="pan" && e.touches.length===1){
-      e.preventDefault(); t.moved=true; panFrom(t,e.touches[0].clientX,e.touches[0].clientY);
-    } else if(t.mode==="pinch" && e.touches.length===2){
-      e.preventDefault();
-      const [a,b]=e.touches, f=dist(a,b)/t.d0, m=mid(a,b);
-      const p0=toSvg(t.m0.x,t.m0.y,t.inv), p1=toSvg(m.x,m.y,t.inv);
-      const z=zoomed(t.vb,f,p0.x,p0.y);
-      setVB(clampVB([z[0]-(p1.x-p0.x)/f, z[1]-(p1.y-p0.y)/f, z[2], z[3]]));
-    }
-  },{passive:false});
-  const end=e=>{
-    if(!t) return;
-    clearTimeout(t.timer);
-    if(t.mode==="pan"||t.moved){ suppressClick=true; setTimeout(()=>suppressClick=false,400); }
-    if(e.touches.length===0||t.mode==="pinch"){ t=null; endHold(); }
-  };
-  svg.addEventListener("touchend", end); svg.addEventListener("touchcancel", end);
-}
 
 // ---------- 옆 패널 ----------
 function tripRow(t){
@@ -1134,7 +1026,7 @@ async function setScope(s){
 
 // ---------- 이벤트 위임 ----------
 document.addEventListener("click", e=>{
-  const el=e.target.closest("[data-trip],[data-filter],[data-add-trip],[data-add-here],[data-add-country],[data-scope],[data-upload],[data-upload-trip],[data-edit-trip],[data-del-trip],[data-close],[data-focus],[data-region],[data-thumb],[data-zoom],.ph");
+  const el=e.target.closest("[data-trip],[data-filter],[data-add-trip],[data-add-here],[data-add-country],[data-scope],[data-upload],[data-upload-trip],[data-edit-trip],[data-del-trip],[data-close],[data-focus],[data-region],[data-thumb],.ph");
   if(!el) return;
   if(el.matches("[data-close]")) return el.closest("dialog").close();
   if(el.matches("[data-add-trip]")) return openTrip();
@@ -1145,7 +1037,6 @@ document.addEventListener("click", e=>{
   if(el.matches("[data-upload-trip]")) return openUpload(el.dataset.uploadTrip);
   if(el.matches("[data-edit-trip]")) return openTrip(el.dataset.editTrip);
   if(el.matches("[data-del-trip]")) return askDeleteTrip(el.dataset.delTrip);
-  if(el.matches("[data-zoom]")) return zoomButton(el.dataset.zoom);
   if(el.matches("[data-focus]")) return state.focus===el.dataset.focus ? mapBack() : focusProv(el.dataset.focus);
   if(el.matches("[data-region]")) return selectRegion(el.dataset.region);
   if(el.matches("[data-thumb]")) return openLb($("side")._list, +el.dataset.thumb);
