@@ -382,7 +382,7 @@ footer small{display:block;font-family:var(--f-body);font-size:12px;margin-top:4
 
   <section id="map">
     <div class="sec-head">
-      <div><div class="eyebrow">우리가 다녀온 곳</div><h2>여행지도</h2><p id="mapDesc">시·도를 누르면 확대되고, 시·군·구를 누르면 그곳 사진이 열려요.</p></div>
+      <div><div class="eyebrow">우리가 다녀온 곳</div><h2>여행지도</h2></div>
     </div>
     <div class="map-grid">
       <div>
@@ -392,7 +392,7 @@ footer small{display:block;font-family:var(--f-body);font-size:12px;margin-top:4
         </div>
         <div class="map-box" id="mapBox"></div>
         <div class="map-foot">
-          <span id="mapCount">전국 230곳 중 0곳 색칠</span>
+          <span id="mapCount">전국 230곳 중 0곳</span>
           <div class="legend" aria-label="색 범례">
             <span><i style="background:var(--m-v)"></i>다녀옴</span>
             <span><i style="background:var(--m1)"></i>1–2장</span>
@@ -707,7 +707,7 @@ function paintMap(){
     return;
   }
   const colored=Object.values(muni).filter(s=>s.trips).length;
-  $("mapCount").textContent=`전국 ${GEO.muni.length}곳 중 ${colored}곳 색칠`;
+  $("mapCount").textContent=`전국 ${GEO.muni.length}곳 중 ${colored}곳`;
   // 크럼·뒤로
   $("crumb").innerHTML = !p ? "<b>전국</b>" : `전국 › ${m?esc(p.f)+" › <b>"+esc(m.n)+"</b>":"<b>"+esc(p.f)+"</b>"}`;
   $("mapBack").hidden=!state.focus;
@@ -802,7 +802,9 @@ function renderHome(){
   if(a||b){ h.innerHTML=`${esc(a||"나")}<span class="amp">${HEART}</span>${esc(b||"너")}`; $("brandName").textContent=`${a||"나"} & ${b||"너"}의 여행`; }
   else { h.textContent="우리 둘의 여행"; $("brandName").textContent="둘의 여행 앨범"; }
   const s=parseD(since);
-  $("dday").innerHTML = s ? `함께한 지 <strong>D+${(Math.round((today()-s)/864e5)+1).toLocaleString()}</strong><span class="hand">since ${fmt(since)}</span>` : "처음 만난 날을 입력하면 함께한 날짜가 표시돼요.";
+  // 첫 만남이 지났으면 D+(만난 날이 1일째), 아직이면 D-남은 날
+  const gap=s ? Math.round((today()-s)/864e5) : 0;
+  $("dday").innerHTML = s ? `첫 만남 <strong>${gap>=0 ? "D+"+(gap+1).toLocaleString() : "D-"+(-gap).toLocaleString()}</strong><span class="hand">since ${fmt(since)}</span>` : "처음 만난 날을 입력하면 함께한 날짜가 표시돼요.";
   const past = state.trips.filter(t=>parseD(t.start)<=today());
   $("stTrips").textContent=past.length;
   // 국내: 다녀온 시·군·구 수, 해외: 다녀온 나라 수
@@ -1012,8 +1014,6 @@ function syncScopeTabs(){
   $("tabKr").setAttribute("aria-selected", String(!isWorld()));
   $("tabWorld").setAttribute("aria-selected", String(isWorld()));
   document.body.classList.toggle("world", isWorld());
-  $("mapDesc").textContent = isWorld() ? "나라를 누르면 그 나라 여행과 사진이 열려요. 대한민국을 누르면 국내 탭으로 가요."
-    : "시·도를 누르면 확대되고, 시·군·구를 누르면 그곳 사진이 열려요.";
 }
 async function setScope(s){
   if(s===scope) return;
