@@ -1457,7 +1457,8 @@ function askLogin(be){
         $("lPw").value=""; $("lPw2").value=""; d.close(); resolve();
       }catch(x){
         const m=String(x?.message||"");
-        if(!signup) show("아이디나 비밀번호가 맞지 않아요.");
+        // 비밀번호 오류와 서버 연결 실패(무료 프로젝트 일시정지 등)를 구분해서 알려요
+        if(!signup) show(/invalid login credentials/i.test(m) ? "아이디나 비밀번호가 맞지 않아요." : "저장소 서버에 연결하지 못했어요. Supabase 프로젝트가 일시정지됐는지 확인해 주세요.");
         else if(/already|registered|exists/i.test(m)) show("이미 가입된 아이디예요. 로그인으로 들어와 주세요.");
         else if(/signups? not allowed|disabled/i.test(m)) show("지금은 가입이 닫혀 있어요.");
         else if(/password/i.test(m)) show("비밀번호는 6자 이상으로 정해 주세요.");
