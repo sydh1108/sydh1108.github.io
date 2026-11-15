@@ -723,7 +723,7 @@ function focusProv(code){
 function selectRegion(code){
   const m=MUNI.get(code); if(!m) return;
   state.focus=m.p; state.region=code; paintMap(); renderSide();
-  animateTo(fitVB(m.b));   // 고른 시·군·구가 지도 상자에 맞게 확대돼요
+  animateTo(provVB(m.p));   // 시·군·구를 눌러도 확대는 시·도까지만
   if(matchMedia("(max-width:820px)").matches) $("side").scrollIntoView({block:"start"});
 }
 function mapBack(){
