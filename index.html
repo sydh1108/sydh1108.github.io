@@ -338,7 +338,7 @@ footer small{display:block;font-family:var(--f-body);font-size:12px;margin-top:4
 
 <header class="nav"><div class="wrap">
   <div class="brand"><svg class="heart" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.8 4.5c2.2 0 3.6 1.2 5.2 3 1.6-1.8 3-3 5.2-3 3.8 0 5.9 3.9 4.4 7.3C19.5 16.4 12 21 12 21z"/></svg><span id="brandName">둘의 여행 앨범</span></div>
-  <div class="scope-tabs" role="tablist" aria-label="국내/해외">
+  <div class="scope-tabs" role="tablist" aria-label="국내/해외" hidden>
     <button type="button" role="tab" id="tabKr" data-scope="kr">국내</button>
     <button type="button" role="tab" id="tabWorld" data-scope="world">해외</button>
   </div>
@@ -534,7 +534,9 @@ const COUNTRY = new Map((WGEO?.prov||[]).map(p=>[p.c,p]));
 // 지금 화면에 그리는 지도: 국내 탭이면 한국(시·도 › 시·군·구), 해외 탭이면 세계(나라)
 let GEO=KGEO, PROV=KPROV, MUNI=KMUNI;
 // trips·photos 는 지금 탭(국내/해외)에 해당하는 것만, allTrips·allPhotos 는 전체
-let scope="kr"; try{ if(localStorage.getItem("albumScope")==="world") scope="world"; }catch(_){}
+// 해외 탭은 잠시 꺼 둠: true 로 바꾸면 맨 위 탭과 여행 추가의 "해외"가 다시 나타나요
+const WORLD_ON=false;
+let scope="kr"; try{ if(WORLD_ON && localStorage.getItem("albumScope")==="world") scope="world"; }catch(_){}
 const state = { couple:{}, collage:{}, trips:[], photos:[], allTrips:[], allPhotos:[], filter:"all", db:null, assets:null, canWrite:true, lbList:[], lbIdx:0,
   focus:null, region:null, stats:null };
 const isWorld = () => scope==="world";
@@ -1083,7 +1085,7 @@ function openTrip(id, pre){
   const abroadNew = !editing && !pre && isWorld();
   const prov = t.abroad||abroadNew ? "abroad" : (t.prov || (!isWorld() && state.focus) || "32");
   $("tProv").innerHTML = (KGEO?.prov||[]).slice().sort((a,b)=>a.c.localeCompare(b.c)).map(p=>`<option value="${p.c}"${p.c===prov?" selected":""}>${esc(p.f)}</option>`).join("")
-    + `<option value="abroad"${prov==="abroad"?" selected":""}>해외</option>`;
+    + (WORLD_ON || prov==="abroad" ? `<option value="abroad"${prov==="abroad"?" selected":""}>해외</option>` : "");
   if(prov!=="abroad") fillMuni(prov, t.muni || (state.region && KMUNI.get(state.region)?.p===prov ? state.region : ""));
   fillCountry(t.country || (isWorld() ? state.focus : "") || "");
   $("tripErr").hidden=true; $("tripConfirm").hidden=true; $("tripDelete").hidden=!editing;
