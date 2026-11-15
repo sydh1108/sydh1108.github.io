@@ -359,7 +359,7 @@ footer small{display:block;font-family:var(--f-body);font-size:12px;margin-top:4
         <div class="next" id="nextTrip" hidden></div>
         <div class="hero-actions">
           <button class="btn primary" id="heroAddTrip" type="button">여행 추가</button>
-          <button class="btn" id="heroSettings" type="button">우리 정보 설정</button>
+          <button class="btn" id="heroSettings" type="button" hidden>우리 정보 설정</button>
         </div>
         <div class="banner" id="statusBanner" hidden></div>
       </div>
@@ -1008,7 +1008,7 @@ function renderAll(){ computeStats(); renderHome(); paintMap(); renderSide(); re
 function syncControls(){
   const can=!!state.assets;
   $("fab").hidden=!can;
-  ["heroAddTrip","heroSettings"].forEach(id=>$(id).hidden=!state.db||!state.canWrite);
+  $("heroAddTrip").hidden=!state.db||!state.canWrite;   // 우리 정보 설정(heroSettings)은 잠시 숨김
 }
 function showTrip(id){ state.filter=id; renderSide(); renderAlbum(); $("album").scrollIntoView(); }
 // 맨 위 국내/해외 탭: 지도·통계·사진첩·첫 화면 사진이 모두 그 탭 기준으로 바뀌어요
