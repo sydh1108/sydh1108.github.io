@@ -392,7 +392,7 @@ footer small{display:block;font-family:var(--f-body);font-size:12px;margin-top:4
         </div>
         <div class="map-box" id="mapBox"></div>
         <div class="map-foot">
-          <span id="mapCount">전국 230곳 중 0곳</span>
+          <span id="mapCount">230곳 중 0곳</span>
           <div class="legend" aria-label="색 범례">
             <span><i style="background:var(--m-v)"></i>다녀옴</span>
             <span><i style="background:var(--m1)"></i>1–2장</span>
@@ -709,7 +709,7 @@ function paintMap(){
     return;
   }
   const colored=Object.values(muni).filter(s=>s.trips).length;
-  $("mapCount").textContent=`전국 ${GEO.muni.length}곳 중 ${colored}곳`;
+  $("mapCount").textContent=`${GEO.muni.length}곳 중 ${colored}곳`;
   // 크럼·뒤로
   $("crumb").innerHTML = !p ? "<b>전국</b>" : `전국 › ${m?esc(p.f)+" › <b>"+esc(m.n)+"</b>":"<b>"+esc(p.f)+"</b>"}`;
   $("mapBack").hidden=!state.focus;
